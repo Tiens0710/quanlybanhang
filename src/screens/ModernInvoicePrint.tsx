@@ -18,19 +18,22 @@ let RNHTMLtoPDF: any;
 let RNFS: any;
 
 try {
-  captureRef = require('react-native-view-shot').captureRef;
+  const viewShotModule = require('react-native-view-shot');
+  captureRef = viewShotModule.captureRef || viewShotModule;
 } catch (e) {
   captureRef = null;
 }
 
 try {
-  RNHTMLtoPDF = require('react-native-html-to-pdf');
+  const htmlToPdfModule = require('react-native-html-to-pdf');
+  RNHTMLtoPDF = htmlToPdfModule.default || htmlToPdfModule;
 } catch (e) {
   RNHTMLtoPDF = null;
 }
 
 try {
-  RNFS = require('react-native-fs');
+  const fsModule = require('react-native-fs');
+  RNFS = fsModule.default || fsModule;
 } catch (e) {
   RNFS = null;
 }
@@ -89,22 +92,22 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
     try {
       // Check Android version
       const androidVersion = Platform.Version as number;
-      
+
       if (androidVersion >= 30) {
         // Android 11+ (API 30+) - Use string literal for MANAGE_EXTERNAL_STORAGE
         try {
           const hasManagePermission = await PermissionsAndroid.check(
             'android.permission.MANAGE_EXTERNAL_STORAGE' as any
           );
-          
+
           if (!hasManagePermission) {
             Alert.alert(
               'Cần cấp quyền truy cập bộ nhớ',
-              'Android 11+ yêu cầu quyền đặc biệt để quản lý file. Vui lòng cấp quyền "Quản lý tất cả file" trong Cài đặt > Ứng dụng > ' + 'Hoa Tuoi' + ' > Quyền.',
+              'Android 11+ yêu cầu quyền đặc biệt để quản lý file. Vui lòng cấp quyền "Quản lý tất cả file" trong Cài đặt > Ứng dụng > QuanLyBanHang > Quyền.',
               [
                 { text: 'Hủy', style: 'cancel' },
-                { 
-                  text: 'Mở Cài đặt', 
+                {
+                  text: 'Mở Cài đặt',
                   onPress: () => Linking.openSettings()
                 }
               ]
@@ -117,7 +120,7 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
           // Fall through to legacy permission handling
         }
       }
-      
+
       // Android 10 và thấp hơn, hoặc fallback cho Android 11+
       const permissions = [
         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
@@ -125,7 +128,7 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
       ];
 
       const results = await PermissionsAndroid.requestMultiple(permissions);
-      
+
       const allGranted = Object.values(results).every(
         result => result === PermissionsAndroid.RESULTS.GRANTED
       );
@@ -136,8 +139,8 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
           'Ứng dụng cần quyền truy cập bộ nhớ để lưu file hóa đơn.',
           [
             { text: 'Hủy', style: 'cancel' },
-            { 
-              text: 'Thử lại', 
+            {
+              text: 'Thử lại',
               onPress: () => requestStoragePermission()
             }
           ]
@@ -153,8 +156,8 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
         'Không thể yêu cầu quyền truy cập bộ nhớ. Vui lòng cấp quyền thủ công trong Cài đặt.',
         [
           { text: 'OK' },
-          { 
-            text: 'Mở Cài đặt', 
+          {
+            text: 'Mở Cài đặt',
             onPress: () => Linking.openSettings()
           }
         ]
@@ -300,9 +303,9 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
       <body>
         <div class="invoice-container">
           <div class="header">
-            <div class="company-name">Công ty TNHH Ngọc Châu Âu</div>
+            <div class="company-name">Công ty TNHH ANABAS</div>
             <div class="company-info">Địa chỉ: 455 Sư Vạn Hạnh, P.12, Q.10, TP.HCM</div>
-            <div class="company-info">Điện thoại: (08) 6264 5786, Email: info@ngocchauau.vn</div>
+            <div class="company-info">Điện thoại: (08) 6264 5786, Email: info@anabas.vn</div>
           </div>
           
           <div class="invoice-title">HÓA ĐƠN BÁN HÀNG</div>
@@ -407,9 +410,9 @@ Công ty TNHH ANABAS
 
 ━━━━━━━━━━━━━━━━━━━━
 📦 CHI TIẾT SẢN PHẨM:
-${invoiceData.items.map((item, index) => 
-  `${index + 1}. ${item.name}\n   ${item.quantity} ${item.unit} × ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`
-).join('\n\n')}
+${invoiceData.items.map((item, index) =>
+      `${index + 1}. ${item.name}\n   ${item.quantity} ${item.unit} × ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`
+    ).join('\n\n')}
 
 ━━━━━━━━━━━━━━━━━━━━
 💰 TỔNG KẾT:
@@ -426,28 +429,28 @@ Thank you! ❤️`;
   const handleSendZalo = async (): Promise<void> => {
     try {
       setIsProcessing(true);
-      
+
       const invoiceText = generateInvoiceText();
-      
+
       // Always use Share API first (most reliable)
       const result = await Share.share({
         message: invoiceText,
-        title: `Hóa đơn ${invoiceData.invoiceNumber}`,
+        title: `Hóa đơn ${invoiceData.invoiceNumber} `,
       });
 
       if (result.action === Share.sharedAction) {
         // Check if Zalo is available and offer to open it
         const zaloAppUrl = 'zalo://';
         const canOpenZalo = await Linking.canOpenURL(zaloAppUrl);
-        
+
         if (canOpenZalo) {
           Alert.alert(
             'Chia sẻ thành công! ✅',
             'Bạn có muốn mở Zalo để gửi hóa đơn không?',
             [
               { text: 'Không', onPress: () => onPrint?.() },
-              { 
-                text: 'Mở Zalo', 
+              {
+                text: 'Mở Zalo',
                 onPress: () => {
                   Linking.openURL(zaloAppUrl);
                   onPrint?.();
@@ -460,7 +463,7 @@ Thank you! ❤️`;
           onPrint?.();
         }
       }
-      
+
     } catch (error) {
       console.error('Share error:', error);
       Alert.alert('Lỗi chia sẻ', 'Không thể chia sẻ hóa đơn. Vui lòng thử lại.');
@@ -473,64 +476,100 @@ Thank you! ❤️`;
   const handleCreatePDF = async (): Promise<void> => {
     try {
       setIsProcessing(true);
-      
+
       if (!RNHTMLtoPDF) {
+        Alert.alert(
+          'Yêu cầu khởi động lại',
+          'Tính năng PDF cần thư viện mới. Vui lòng tắt ứng dụng và chạy lại lệnh "npx react-native run-android".\n\nĐang chia sẻ text tạm thời...',
+          [{ text: 'OK' }]
+        );
+
         // Fallback to text sharing
         const invoiceText = generateInvoiceText();
         await Share.share({
           message: invoiceText,
           title: `Hóa đơn ${invoiceData.invoiceNumber} (Text Format)`,
         });
-        
-        Alert.alert(
-          'PDF không khả dụng',
-          'Đã chia sẻ hóa đơn dưới dạng text thay thế.',
-          [{ text: 'OK', onPress: () => onPrint?.() }]
-        );
+
         return;
       }
 
-      const hasPermission = await requestStoragePermission();
-      if (!hasPermission) {
-        // Fallback to text sharing
-        const invoiceText = generateInvoiceText();
-        await Share.share({
-          message: invoiceText,
-          title: `Hóa đơn ${invoiceData.invoiceNumber} (Text Format)`,
-        });
-        
-        Alert.alert(
-          'Không có quyền lưu file',
-          'Đã chia sẻ hóa đơn dưới dạng text thay thế.',
-          [{ text: 'OK', onPress: () => onPrint?.() }]
-        );
-        return;
-      }
+      // NOTE: We do NOT block on permission here. 
+      // We generate PDF in cache (sandbox) which is always allowed, 
+      // then we Share it. Saving to Downloads is a 'nice to have' extra.
 
       const htmlContent = generateInvoiceHTML();
       const currentDate = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
       const fileName = `HoaDon_${invoiceData.invoiceNumber}_${currentDate}`;
-      
+
+      // Create PDF in cache/temp directory first
       const options = {
         html: htmlContent,
         fileName: fileName,
-        directory: Platform.OS === 'android' ? 'Download' : 'Documents',
         width: 595,
         height: 842,
         padding: 20,
       };
 
       const file = await RNHTMLtoPDF.convert(options);
-      
-      Alert.alert(
-        'PDF tạo thành công! 📄',
-        `File đã được lưu:\n${fileName}.pdf\n\nVị trí: ${Platform.OS === 'android' ? 'Thư mục Download' : 'Thư mục Documents'}`,
-        [{ text: 'OK', onPress: () => onPrint?.() }]
-      );
+      let filePath = file.filePath;
+
+      // 1. Share immediately (Priority 1) - Works without extra permissions
+      try {
+        await Share.share({
+          url: Platform.OS === 'android' ? `file://${filePath}` : filePath,
+          title: `Hóa đơn ${invoiceData.invoiceNumber}`,
+          message: `Hóa đơn PDF: ${fileName}`
+        });
+      } catch (shareErr) {
+        console.log('Share error', shareErr);
+      }
+
+      // 2. OPTIONAL: Try to save to Downloads (Priority 2)
+      if (RNFS) {
+        try {
+          // Attempt to get permission JUST for saving, but don't force it
+          let hasWritePerm = true;
+          if (Platform.OS === 'android' && Platform.Version < 30) {
+            hasWritePerm = await requestStoragePermission();
+          }
+          // On Android 11+ (Version 30+), we might need MANAGE_EXTERNAL_STORAGE for strict fs access
+          // OR simply rely on Share. But let's try gracefully.
+
+          if (hasWritePerm) {
+            const destPath = Platform.OS === 'android'
+              ? `${RNFS.DownloadDirectoryPath}/${fileName}.pdf`
+              : `${RNFS.DocumentDirectoryPath}/${fileName}.pdf`;
+
+            if (await RNFS.exists(destPath)) {
+              await RNFS.unlink(destPath);
+            }
+            await RNFS.copyFile(filePath, destPath);
+
+            // Only alert if we successfully SAVED to downloads
+            Alert.alert(
+              'Tải về thành công! ✅',
+              `File PDF đã được lưu tại:\nBộ nhớ trong > Download > ${fileName}.pdf\n\n(App cũng sẽ mở menu chia sẻ để bạn gửi nhanh)`,
+              [{ text: 'OK', onPress: () => onPrint?.() }]
+            );
+            return;
+          }
+        } catch (copyError) {
+          console.warn('Could not copy to Downloads (Permission or FS error)', copyError);
+          Alert.alert(
+            'Lưu file thất bại',
+            'Không thể lưu trực tiếp vào thư mục Download do hạn chế quyền của Android.\n\nVui lòng sử dụng tính năng "Chia sẻ" (Share) vừa hiện lên để lưu hoặc gửi file.',
+            [{ text: 'Đã hiểu' }]
+          );
+        }
+      }
+
+      // If we got here, we shared but didn't verify save. That's fine.
+      // No extra alert needed as Share sheet is obvious feedback.
 
     } catch (error) {
       console.error('PDF creation error:', error);
-      
+
       // Fallback to text sharing
       try {
         const invoiceText = generateInvoiceText();
@@ -538,7 +577,7 @@ Thank you! ❤️`;
           message: invoiceText,
           title: `Hóa đơn ${invoiceData.invoiceNumber} (Text Format)`,
         });
-        
+
         Alert.alert(
           'Lỗi tạo PDF',
           'Đã chia sẻ hóa đơn dưới dạng text thay thế.',
@@ -556,20 +595,21 @@ Thank you! ❤️`;
   const handleSaveAsImage = async (): Promise<void> => {
     try {
       setIsProcessing(true);
-      
+
       if (!captureRef) {
+        Alert.alert(
+          'Yêu cầu khởi động lại',
+          'Tính năng Lưu ảnh cần thư viện mới. Vui lòng tắt ứng dụng và chạy lại lệnh "npx react-native run-android".\n\nĐang chia sẻ text tạm thời...',
+          [{ text: 'OK' }]
+        );
+
         // Fallback to text sharing
         const invoiceText = generateInvoiceText();
         await Share.share({
           message: invoiceText,
           title: `Hóa đơn ${invoiceData.invoiceNumber} (Text Format)`,
         });
-        
-        Alert.alert(
-          'Chụp ảnh không khả dụng',
-          'Đã chia sẻ hóa đơn dưới dạng text thay thế.',
-          [{ text: 'OK', onPress: () => onPrint?.() }]
-        );
+
         return;
       }
 
@@ -581,7 +621,7 @@ Thank you! ❤️`;
           message: invoiceText,
           title: `Hóa đơn ${invoiceData.invoiceNumber} (Text Format)`,
         });
-        
+
         Alert.alert(
           'Không có quyền lưu file',
           'Đã chia sẻ hóa đơn dưới dạng text thay thế.',
@@ -607,13 +647,13 @@ Thank you! ❤️`;
         try {
           const currentDate = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
           const fileName = `HoaDon_${invoiceData.invoiceNumber}_${currentDate}.png`;
-          
-          const downloadPath = Platform.OS === 'android' 
+
+          const downloadPath = Platform.OS === 'android'
             ? `${RNFS.DownloadDirectoryPath}/${fileName}`
             : `${RNFS.DocumentDirectoryPath}/${fileName}`;
 
           await RNFS.copyFile(uri, downloadPath);
-          
+
           Alert.alert(
             'Ảnh lưu thành công! 🎉',
             `File đã được lưu:\n${fileName}\n\nVị trí: ${Platform.OS === 'android' ? 'Thư mục Download' : 'Thư mục Documents'}`,
@@ -625,7 +665,7 @@ Thank you! ❤️`;
             url: uri,
             title: `Hóa đơn ${invoiceData.invoiceNumber}`,
           });
-          
+
           Alert.alert(
             'Đã chia sẻ ảnh',
             'Không thể lưu trực tiếp, đã mở menu chia sẻ.',
@@ -638,7 +678,7 @@ Thank you! ❤️`;
           url: uri,
           title: `Hóa đơn ${invoiceData.invoiceNumber}`,
         });
-        
+
         Alert.alert(
           'Đã chia sẻ ảnh',
           'Ảnh hóa đơn đã được tạo và chia sẻ.',
@@ -648,7 +688,7 @@ Thank you! ❤️`;
 
     } catch (error) {
       console.error('Save image error:', error);
-      
+
       // Final fallback to text sharing
       try {
         const invoiceText = generateInvoiceText();
@@ -656,7 +696,7 @@ Thank you! ❤️`;
           message: invoiceText,
           title: `Hóa đơn ${invoiceData.invoiceNumber} (Text Format)`,
         });
-        
+
         Alert.alert(
           'Lỗi chụp ảnh',
           'Đã chia sẻ hóa đơn dưới dạng text thay thế.',
@@ -674,33 +714,33 @@ Thank you! ❤️`;
     <View style={styles.container}>
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={[styles.zaloButton, isProcessing && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.zaloButton, isProcessing && styles.disabledButton]}
           onPress={handleSendZalo}
           disabled={isProcessing}
         >
           <Text style={styles.buttonText}>
-            {isProcessing ? '⏳ Đang xử lý...' : '💬 Gửi Zalo'}
+            {isProcessing ? 'Đang xử lý...' : 'Gửi Zalo'}
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.pdfButton, isProcessing && styles.disabledButton]} 
+
+        <TouchableOpacity
+          style={[styles.pdfButton, isProcessing && styles.disabledButton]}
           onPress={handleCreatePDF}
           disabled={isProcessing}
         >
           <Text style={styles.buttonText}>
-            {isProcessing ? '⏳ Đang tạo...' : '📄 Xuất PDF'}
+            {isProcessing ? 'Đang tạo...' : 'Xuất PDF'}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.imageButton, isProcessing && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.imageButton, isProcessing && styles.disabledButton]}
           onPress={handleSaveAsImage}
           disabled={isProcessing}
         >
           <Text style={styles.buttonText}>
-            {isProcessing ? '⏳ Đang lưu...' : '📷 Lưu ảnh'}
+            {isProcessing ? 'Đang lưu...' : 'Lưu ảnh'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -710,12 +750,12 @@ Thank you! ❤️`;
         <View ref={invoiceRef} style={styles.invoiceContainer} collapsable={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.companyName}>Công ty Công Nghệ Phần Mềm ANABAS</Text>
+            <Text style={styles.companyName}>Công ty TNHH ANABAS</Text>
             <Text style={styles.companyInfo}>
-              Địa chỉ: 130C - 130D Đường Nguyễn Văn Cừ nối dài, P. Tân An, Tp. Cần Thơ
+              Địa chỉ: 455 Sư Vạn Hạnh, P.12, Q.10, TP.HCM
             </Text>
             <Text style={styles.companyInfo}>
-              Điện thoại: 0375711766, Email: anabas.com
+              Điện thoại: (08) 6264 5786, Email: info@anabas.vn
             </Text>
           </View>
 
