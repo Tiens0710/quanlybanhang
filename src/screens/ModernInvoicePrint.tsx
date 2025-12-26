@@ -395,9 +395,9 @@ const ModernInvoicePrint: React.FC<InvoicePrintProps> = ({ invoiceData, onPrint 
   const generateInvoiceText = (): string => {
     return `🧾 HÓA ĐƠN BÁN HÀNG
 
-🏢 Công ty TNHH Ngọc Châu Âu
-📍 455 Sư Vạn Hạnh, P.12, Q.10, TP.HCM  
-📞 (08) 6264 5786
+Công ty TNHH ANABAS
+455 Sư Vạn Hạnh, P.12, Q.10, TP.HCM  
+(08) 6264 5786
 
 ━━━━━━━━━━━━━━━━━━━━
 📋 Số phiếu: ${invoiceData.invoiceNumber}
@@ -710,12 +710,12 @@ Thank you! ❤️`;
         <View ref={invoiceRef} style={styles.invoiceContainer} collapsable={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.companyName}>Công ty TNHH Ngọc Châu Âu</Text>
+            <Text style={styles.companyName}>Công ty Công Nghệ Phần Mềm ANABAS</Text>
             <Text style={styles.companyInfo}>
-              Địa chỉ: 455 Sư Vạn Hạnh, P.12, Q.10, TP.HCM
+              Địa chỉ: 130C - 130D Đường Nguyễn Văn Cừ nối dài, P. Tân An, Tp. Cần Thơ
             </Text>
             <Text style={styles.companyInfo}>
-              Điện thoại: (08) 6264 5786, Email: info@ngocchauau.vn
+              Điện thoại: 0375711766, Email: anabas.com
             </Text>
           </View>
 

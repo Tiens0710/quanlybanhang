@@ -82,6 +82,12 @@ const AddItemsScreen = () => {
   // Product list state
   const [productList, setProductList] = useState<Product[]>([]);
 
+  // Customer info state for invoice
+  const [showCustomerInfo, setShowCustomerInfo] = useState<boolean>(false);
+  const [customerName, setCustomerName] = useState<string>('');
+  const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [customerAddress, setCustomerAddress] = useState<string>('');
+
   // Default products
   const defaultProducts: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
@@ -168,7 +174,7 @@ const AddItemsScreen = () => {
     };
   };
 
-  // Handle print invoice
+  // Handle print invoice - show customer info modal first
   const handlePrintInvoice = () => {
     if (results.length === 0) {
       Alert.alert(
@@ -179,21 +185,55 @@ const AddItemsScreen = () => {
       return;
     }
 
-    const invoiceData = createInvoiceData();
+    const validItems = results.filter(item => !item.error);
+    if (validItems.length === 0) {
+      Alert.alert(
+        'Không có sản phẩm hợp lệ',
+        'Tất cả sản phẩm đều chưa có trong kho. Vui lòng thêm sản phẩm vào kho trước.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
-    Alert.alert(
-      'Tạo hóa đơn',
-      `Tạo hóa đơn với ${results.filter(item => !item.error).length} sản phẩm?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Tạo hóa đơn',
-          onPress: () => {
-            navigation.navigate('InvoiceScreen', { invoiceData });
-          },
-        },
-      ]
-    );
+    // Open customer info modal
+    setShowCustomerInfo(true);
+  };
+
+  // Confirm and create invoice with customer info
+  const confirmCreateInvoice = () => {
+    const validResults = results.filter(item => !item.error);
+
+    const invoiceItems: InvoiceItem[] = validResults.map(item => ({
+      code: item.product.replace(/\s+/g, '').substring(0, 8).toUpperCase(),
+      name: item.product,
+      unit: 'cái',
+      quantity: item.quantity,
+      discount: 0,
+      price: item.unitPrice,
+      total: item.totalPrice,
+    }));
+
+    const invoiceData: InvoiceData = {
+      invoiceNumber: generateInvoiceNumber(),
+      date: new Date().toISOString(),
+      customerName: customerName.trim() || 'Khách lẻ',
+      customerAddress: customerAddress.trim(),
+      customerPhone: customerPhone.trim(),
+      cashier: 'tieens1802',
+      items: invoiceItems,
+      subtotal: totalPrice,
+      amountPaid: totalPrice,
+      pointsOnInvoice: 0,
+      totalPoints: 0,
+    };
+
+    // Close modal and navigate
+    setShowCustomerInfo(false);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+
+    navigation.navigate('InvoiceScreen', { invoiceData });
   };
 
   // Handle back navigation
@@ -365,29 +405,140 @@ const AddItemsScreen = () => {
     const product = findProductFuzzy(suggestionName);
 
     if (product) {
-      // Product found - add immediately to results
-      const itemTotal = quantity * product.price;
-      const newItem: ResultItem = {
-        id: Math.random().toString(),
-        originalText: `${quantity} ${product.name}`,
-        product: product.name,
-        quantity: quantity,
-        unitPrice: product.price,
-        totalPrice: itemTotal,
-        error: false,
-      };
+      // Check if product already in cart
+      const existingIndex = results.findIndex(item => item.product === product.name && !item.error);
 
-      setResults(prev => [...prev, newItem]);
-      setTotalPrice(prev => prev + itemTotal);
+      if (existingIndex >= 0) {
+        // Update quantity
+        const itemTotal = quantity * product.price;
+        setResults(prev => prev.map((item, idx) => {
+          if (idx === existingIndex) {
+            const newQty = item.quantity + quantity;
+            return {
+              ...item,
+              quantity: newQty,
+              totalPrice: newQty * product.price,
+              originalText: `${newQty} ${product.name}`,
+            };
+          }
+          return item;
+        }));
+        setTotalPrice(prev => prev + itemTotal);
+      } else {
+        // Add new item
+        const itemTotal = quantity * product.price;
+        const newItem: ResultItem = {
+          id: Math.random().toString(),
+          originalText: `${quantity} ${product.name}`,
+          product: product.name,
+          quantity: quantity,
+          unitPrice: product.price,
+          totalPrice: itemTotal,
+          error: false,
+        };
+        setResults(prev => [...prev, newItem]);
+        setTotalPrice(prev => prev + itemTotal);
+      }
+
       setInputText(''); // Clear input
       setAiSuggestions([]); // Clear suggestions
-
-      // Simple feedback
-      Alert.alert('✓ Đã thêm', `${quantity} ${product.name}`);
     } else {
       // Not in database - open quick add modal
       quickAddProduct(suggestionName);
     }
+  };
+
+  // Add product to cart (from input text)
+  const addToCart = () => {
+    if (!inputText.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập sản phẩm');
+      return;
+    }
+
+    const { quantity, name: productName } = parseProductLine(inputText.trim());
+    const product = findProductFuzzy(productName);
+
+    if (product) {
+      // Check if product already in cart
+      const existingIndex = results.findIndex(item => item.product === product.name && !item.error);
+
+      if (existingIndex >= 0) {
+        // Update quantity
+        const itemTotal = quantity * product.price;
+        setResults(prev => prev.map((item, idx) => {
+          if (idx === existingIndex) {
+            const newQty = item.quantity + quantity;
+            return {
+              ...item,
+              quantity: newQty,
+              totalPrice: newQty * product.price,
+              originalText: `${newQty} ${product.name}`,
+            };
+          }
+          return item;
+        }));
+        setTotalPrice(prev => prev + itemTotal);
+        Alert.alert('✓ Đã cập nhật', `${product.name}: +${quantity}`);
+      } else {
+        // Add new item
+        const itemTotal = quantity * product.price;
+        const newItem: ResultItem = {
+          id: Math.random().toString(),
+          originalText: `${quantity} ${product.name}`,
+          product: product.name,
+          quantity: quantity,
+          unitPrice: product.price,
+          totalPrice: itemTotal,
+          error: false,
+        };
+        setResults(prev => [...prev, newItem]);
+        setTotalPrice(prev => prev + itemTotal);
+        Alert.alert('✓ Đã thêm', `${quantity} ${product.name}`);
+      }
+
+      setInputText(''); // Clear input after adding
+      setAiSuggestions([]); // Clear suggestions
+    } else {
+      // Not in database - open quick add modal
+      quickAddProduct(productName);
+    }
+  };
+
+  // Remove product from cart
+  const removeFromCart = (itemId: string) => {
+    const item = results.find(r => r.id === itemId);
+    if (item) {
+      setTotalPrice(prev => prev - item.totalPrice);
+      setResults(prev => prev.filter(r => r.id !== itemId));
+    }
+  };
+
+  // Update cart item quantity
+  const updateCartQuantity = (itemId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+
+    setResults(prev => {
+      let priceDiff = 0;
+      const updated = prev.map(item => {
+        if (item.id === itemId) {
+          const oldTotal = item.totalPrice;
+          const newTotal = newQuantity * item.unitPrice;
+          priceDiff = newTotal - oldTotal;
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: newTotal,
+            originalText: `${newQuantity} ${item.product}`,
+          };
+        }
+        return item;
+      });
+      setTotalPrice(p => p + priceDiff);
+      return updated;
+    });
   };
 
   // Update product price
@@ -830,8 +981,8 @@ const AddItemsScreen = () => {
                         style={styles.resultImage}
                       />
                       <View style={styles.resultDetails}>
-                        <Text style={[styles.resultName, item.error && styles.errorText]}>
-                          {item.product} {item.quantity > 0 && <Text style={styles.quantity}>x{item.quantity}</Text>}
+                        <Text style={[styles.resultName, item.error && styles.errorText]} numberOfLines={1}>
+                          {item.product}
                         </Text>
                         {!item.error && (
                           <Text style={styles.resultPrice}>{formatPrice(item.totalPrice)}</Text>
@@ -846,6 +997,31 @@ const AddItemsScreen = () => {
                           </TouchableOpacity>
                         )}
                       </View>
+                      {/* Quantity controls */}
+                      {!item.error && (
+                        <View style={styles.quantityControls}>
+                          <TouchableOpacity
+                            style={styles.quantityBtn}
+                            onPress={() => updateCartQuantity(item.id, item.quantity - 1)}
+                          >
+                            <Icon name="minus" size={16} color="#EF4444" />
+                          </TouchableOpacity>
+                          <Text style={styles.quantityText}>{item.quantity}</Text>
+                          <TouchableOpacity
+                            style={styles.quantityBtn}
+                            onPress={() => updateCartQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Icon name="plus" size={16} color="#10B981" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {/* Delete button */}
+                      <TouchableOpacity
+                        style={styles.deleteCartItemBtn}
+                        onPress={() => removeFromCart(item.id)}
+                      >
+                        <Icon name="trash-can-outline" size={18} color="#EF4444" />
+                      </TouchableOpacity>
                     </View>
                   );
                 }}
@@ -895,10 +1071,10 @@ const AddItemsScreen = () => {
             />
             <TouchableOpacity
               style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-              onPress={analyzeText}
+              onPress={addToCart}
               disabled={!inputText.trim()}
             >
-              <Icon name="send" size={20} color="#ffffff" />
+              <Icon name="plus" size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
           <View style={styles.actionButtons}>
@@ -1068,6 +1244,76 @@ const AddItemsScreen = () => {
                 >
                   <Icon name="plus" size={16} color="#fff" />
                   <Text style={styles.quickAddConfirmText}>Thêm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Customer Info Modal */}
+        <Modal visible={showCustomerInfo} animationType="slide" transparent>
+          <View style={styles.customerInfoOverlay}>
+            <View style={styles.customerInfoModal}>
+              <View style={styles.customerInfoHeader}>
+                <Text style={styles.customerInfoTitle}>Thông tin khách hàng</Text>
+                <TouchableOpacity onPress={() => setShowCustomerInfo(false)}>
+                  <Icon name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.customerInfoSummary}>
+                <Text style={styles.customerInfoSummaryText}>
+                  {results.filter(item => !item.error).length} sản phẩm • {formatPrice(totalPrice)}
+                </Text>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Tên khách hàng</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={customerName}
+                  onChangeText={setCustomerName}
+                  placeholder="Nhập tên khách hàng (bỏ trống = Khách lẻ)"
+                  autoFocus
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Số điện thoại</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={customerPhone}
+                  onChangeText={setCustomerPhone}
+                  placeholder="Nhập số điện thoại (tùy chọn)"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Địa chỉ</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={customerAddress}
+                  onChangeText={setCustomerAddress}
+                  placeholder="Nhập địa chỉ (tùy chọn)"
+                  multiline
+                  numberOfLines={2}
+                />
+              </View>
+
+              <View style={styles.customerInfoButtons}>
+                <TouchableOpacity
+                  style={styles.customerInfoCancelBtn}
+                  onPress={() => setShowCustomerInfo(false)}
+                >
+                  <Text style={styles.customerInfoCancelText}>Hủy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.customerInfoConfirmBtn}
+                  onPress={confirmCreateInvoice}
+                >
+                  <Icon name="printer" size={18} color="#FFFFFF" />
+                  <Text style={styles.customerInfoConfirmText}>Tạo hóa đơn</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1727,6 +1973,111 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 12,
     fontWeight: '500',
+  },
+  // Cart quantity controls
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  quantityBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  quantityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  deleteCartItemBtn: {
+    marginLeft: 8,
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
+  },
+  // Customer Info Modal Styles
+  customerInfoOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  customerInfoModal: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingTop: 16,
+    maxHeight: '80%',
+  },
+  customerInfoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  customerInfoTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  customerInfoSummary: {
+    backgroundColor: '#F0F9FF',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  customerInfoSummaryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0369A1',
+    textAlign: 'center',
+  },
+  customerInfoButtons: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 12,
+  },
+  customerInfoCancelBtn: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  customerInfoCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  customerInfoConfirmBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    backgroundColor: '#6366F1',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  customerInfoConfirmText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 
