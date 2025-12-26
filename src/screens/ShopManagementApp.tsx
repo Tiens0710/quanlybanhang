@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
     headerOverlay: {
         backgroundColor: 'rgba(15, 23, 42, 0.7)',
         paddingHorizontal: 16,
-        paddingTop: 40,
+        paddingTop: 50,
         paddingBottom: 200,
         marginHorizontal: -16,
         marginTop: -40,
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
         marginRight: 4,
     },
     revenueCard: {
-        backgroundColor: '#1E293B',
+        backgroundColor: 'rgba(30, 41, 59, 0.95)',
         borderRadius: 16,
         padding: 20,
         marginTop: -120,
@@ -907,6 +907,8 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.25,
         shadowRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     revenueHeader: {
         flexDirection: 'row',
