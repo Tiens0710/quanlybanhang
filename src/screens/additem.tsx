@@ -23,6 +23,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList, InvoiceData, InvoiceItem } from '../types/navigation';
 import { classifyProduct, ClassificationResult, getProductSuggestions } from '../services/geminiService';
 import { distance as levenshteinDistance } from 'fastest-levenshtein';
+import { detectCarrier, CarrierInfo } from '../utils/phoneCarrierUtils';
 
 // Navigation type
 type AddItemsNavigationProp = StackNavigationProp<RootStackParamList, 'AddItemsScreen'>;
@@ -87,6 +88,7 @@ const AddItemsScreen = () => {
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [customerAddress, setCustomerAddress] = useState<string>('');
+  const [detectedCarrier, setDetectedCarrier] = useState<CarrierInfo | null>(null);
 
   // Default products
   const defaultProducts: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>[] = [
@@ -478,7 +480,6 @@ const AddItemsScreen = () => {
           return item;
         }));
         setTotalPrice(prev => prev + itemTotal);
-        Alert.alert('✓ Đã cập nhật', `${product.name}: +${quantity}`);
       } else {
         // Add new item
         const itemTotal = quantity * product.price;
@@ -493,7 +494,7 @@ const AddItemsScreen = () => {
         };
         setResults(prev => [...prev, newItem]);
         setTotalPrice(prev => prev + itemTotal);
-        Alert.alert('✓ Đã thêm', `${quantity} ${product.name}`);
+        setTotalPrice(prev => prev + itemTotal);
       }
 
       setInputText(''); // Clear input after adding
@@ -857,6 +858,12 @@ const AddItemsScreen = () => {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  // Detect carrier when phone number changes
+  useEffect(() => {
+    const carrier = detectCarrier(customerPhone);
+    setDetectedCarrier(carrier);
+  }, [customerPhone]);
 
 
   const renderProductItem = ({ item }: { item: Product }) => (
@@ -1280,13 +1287,31 @@ const AddItemsScreen = () => {
 
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Số điện thoại</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={customerPhone}
-                  onChangeText={setCustomerPhone}
-                  placeholder="Nhập số điện thoại (tùy chọn)"
-                  keyboardType="phone-pad"
-                />
+                <View style={styles.phoneInputContainer}>
+                  <TextInput
+                    style={[styles.formInput, detectedCarrier && styles.phoneInputWithCarrier]}
+                    value={customerPhone}
+                    onChangeText={setCustomerPhone}
+                    placeholder="Nhập số điện thoại (tùy chọn)"
+                    keyboardType="phone-pad"
+                  />
+                  {detectedCarrier && (
+                    <View style={[styles.carrierBadge, { backgroundColor: detectedCarrier.color + '15' }]}>
+                      {detectedCarrier.logoPath ? (
+                        <Image
+                          source={detectedCarrier.logoPath}
+                          style={styles.carrierLogo}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <Text style={styles.carrierIcon}>{detectedCarrier.icon}</Text>
+                      )}
+                      <Text style={[styles.carrierName, { color: detectedCarrier.color }]}>
+                        {detectedCarrier.name}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
               <View style={styles.formGroup}>
@@ -2078,6 +2103,36 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // Carrier logo styles
+  phoneInputContainer: {
+    position: 'relative',
+  },
+  phoneInputWithCarrier: {
+    paddingRight: 120,
+  },
+  carrierBadge: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  carrierLogo: {
+    width: 20,
+    height: 20,
+  },
+  carrierIcon: {
+    fontSize: 16,
+  },
+  carrierName: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

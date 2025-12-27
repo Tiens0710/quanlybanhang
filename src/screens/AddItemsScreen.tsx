@@ -201,39 +201,22 @@ export const AddItemsScreen: React.FC = () => {
       return;
     }
 
-    Alert.alert(
-      'Thành công',
-      'Đã thêm sản phẩm mới thành công!',
-      [
-        {
-          text: 'Thêm sản phẩm khác',
-          onPress: () => {
-            setProductForm({
-              name: '',
-              sku: '',
-              barcode: '',
-              category: '',
-              description: '',
-              costPrice: 0,
-              sellingPrice: 0,
-              stock: 0,
-              minStock: 5,
-              supplier: '',
-              weight: 0,
-              unit: 'Cái',
-              images: [],
-              tags: []
-            });
-          }
-        },
-        {
-          text: 'Xong',
-          onPress: () => {
-            // Navigate back
-          }
-        }
-      ]
-    );
+    setProductForm({
+      name: '',
+      sku: '',
+      barcode: '',
+      category: '',
+      description: '',
+      costPrice: 0,
+      sellingPrice: 0,
+      stock: 0,
+      minStock: 5,
+      supplier: '',
+      weight: 0,
+      unit: 'Cái',
+      images: [],
+      tags: []
+    });
   };
 
   const renderCategoryItem = ({ item }: { item: Category }) => (
