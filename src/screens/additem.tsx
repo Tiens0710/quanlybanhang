@@ -1306,9 +1306,6 @@ const AddItemsScreen = () => {
                       ) : (
                         <Text style={styles.carrierIcon}>{detectedCarrier.icon}</Text>
                       )}
-                      <Text style={[styles.carrierName, { color: detectedCarrier.color }]}>
-                        {detectedCarrier.name}
-                      </Text>
                     </View>
                   )}
                 </View>
@@ -2109,19 +2106,20 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   phoneInputWithCarrier: {
-    paddingRight: 120,
+    paddingLeft: 50,
   },
   carrierBadge: {
     position: 'absolute',
-    right: 8,
+    left: 8,
     top: 8,
     bottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 8,
-    gap: 6,
+    minWidth: 32,
   },
   carrierLogo: {
     width: 20,

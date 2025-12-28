@@ -10,12 +10,14 @@ import {
   Animated,
   ScrollView,
   Switch,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { colors, typography, spacing, borderRadius, shadows } from '../constants/theme';
+import { detectCarrier, CarrierInfo } from '../utils/phoneCarrierUtils';
 
 interface SettingSection {
   id: string;
@@ -128,6 +130,7 @@ export const SettingsScreen: React.FC = () => {
     currency: 'VND',
     timezone: 'Asia/Ho_Chi_Minh'
   });
+  const [detectedCarrier, setDetectedCarrier] = useState<CarrierInfo | null>(null);
   const fadeAnim = new Animated.Value(0);
 
   useEffect(() => {
@@ -138,16 +141,22 @@ export const SettingsScreen: React.FC = () => {
     }).start();
   }, []);
 
+  // Detect carrier when phone number changes
+  useEffect(() => {
+    const carrier = detectCarrier(storeSettings.phone);
+    setDetectedCarrier(carrier);
+  }, [storeSettings.phone]);
+
   const handleSwitchChange = (sectionId: string, itemId: string, value: boolean) => {
     setSections(prevSections =>
       prevSections.map(section =>
         section.id === sectionId
           ? {
-              ...section,
-              items: section.items.map(item =>
-                item.id === itemId ? { ...item, value } : item
-              )
-            }
+            ...section,
+            items: section.items.map(item =>
+              item.id === itemId ? { ...item, value } : item
+            )
+          }
           : section
       )
     );
@@ -336,13 +345,28 @@ export const SettingsScreen: React.FC = () => {
                 numberOfLines={3}
               />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Số điện thoại"
-                value={storeSettings.phone}
-                onChangeText={(text) => setStoreSettings({ ...storeSettings, phone: text })}
-                keyboardType="phone-pad"
-              />
+              <View style={styles.phoneInputContainer}>
+                <TextInput
+                  style={[styles.input, detectedCarrier && styles.phoneInputWithCarrier]}
+                  placeholder="Số điện thoại"
+                  value={storeSettings.phone}
+                  onChangeText={(text) => setStoreSettings({ ...storeSettings, phone: text })}
+                  keyboardType="phone-pad"
+                />
+                {detectedCarrier && (
+                  <View style={[styles.carrierBadge, { backgroundColor: detectedCarrier.color + '15' }]}>
+                    {detectedCarrier.logoPath ? (
+                      <Image
+                        source={detectedCarrier.logoPath}
+                        style={styles.carrierLogo}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.carrierIcon}>{detectedCarrier.icon}</Text>
+                    )}
+                  </View>
+                )}
+              </View>
 
               <TextInput
                 style={styles.input}
@@ -611,5 +635,32 @@ const styles = StyleSheet.create({
   footerButton: {
     flex: 1,
     marginHorizontal: spacing.xs,
+  },
+  // Carrier logo styles
+  phoneInputContainer: {
+    position: 'relative',
+  },
+  phoneInputWithCarrier: {
+    paddingLeft: 50,
+  },
+  carrierBadge: {
+    position: 'absolute',
+    left: 8,
+    top: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 32,
+  },
+  carrierLogo: {
+    width: 20,
+    height: 20,
+  },
+  carrierIcon: {
+    fontSize: 16,
   },
 });

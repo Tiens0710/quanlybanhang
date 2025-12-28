@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/common';
 import { Button } from '../../components/common';
 import { colors, typography, spacing, borderRadius } from '../../constants/theme';
+import { detectCarrier, CarrierInfo } from '../../utils/phoneCarrierUtils';
 
 export const RegisterScreen: React.FC = ({ navigation }: any) => {
   const [formData, setFormData] = useState({
@@ -25,6 +27,13 @@ export const RegisterScreen: React.FC = ({ navigation }: any) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [detectedCarrier, setDetectedCarrier] = useState<CarrierInfo | null>(null);
+
+  // Detect carrier when phone number changes
+  React.useEffect(() => {
+    const carrier = detectCarrier(formData.phone);
+    setDetectedCarrier(carrier);
+  }, [formData.phone]);
 
   const handleRegister = () => {
     if (!formData.storeName || !formData.ownerName || !formData.email || !formData.password) {
@@ -50,7 +59,7 @@ export const RegisterScreen: React.FC = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -95,13 +104,28 @@ export const RegisterScreen: React.FC = ({ navigation }: any) => {
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Số điện thoại</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập số điện thoại"
-              value={formData.phone}
-              onChangeText={(text) => updateFormData('phone', text)}
-              keyboardType="phone-pad"
-            />
+            <View style={styles.phoneInputContainer}>
+              <TextInput
+                style={[styles.input, detectedCarrier && styles.phoneInputWithCarrier]}
+                placeholder="Nhập số điện thoại"
+                value={formData.phone}
+                onChangeText={(text) => updateFormData('phone', text)}
+                keyboardType="phone-pad"
+              />
+              {detectedCarrier && (
+                <View style={[styles.carrierBadge, { backgroundColor: detectedCarrier.color + '15' }]}>
+                  {detectedCarrier.logoPath ? (
+                    <Image
+                      source={detectedCarrier.logoPath}
+                      style={styles.carrierLogo}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text style={styles.carrierIcon}>{detectedCarrier.icon}</Text>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -118,10 +142,10 @@ export const RegisterScreen: React.FC = ({ navigation }: any) => {
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Icon 
-                  name={showPassword ? 'visibility-off' : 'visibility'} 
-                  size={20} 
-                  color={colors.textSecondary} 
+                <Icon
+                  name={showPassword ? 'visibility-off' : 'visibility'}
+                  size={20}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -141,10 +165,10 @@ export const RegisterScreen: React.FC = ({ navigation }: any) => {
                 style={styles.eyeButton}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                <Icon 
-                  name={showConfirmPassword ? 'visibility-off' : 'visibility'} 
-                  size={20} 
-                  color={colors.textSecondary} 
+                <Icon
+                  name={showConfirmPassword ? 'visibility-off' : 'visibility'}
+                  size={20}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -246,5 +270,32 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
+  },
+  // Carrier logo styles
+  phoneInputContainer: {
+    position: 'relative',
+  },
+  phoneInputWithCarrier: {
+    paddingLeft: 50,
+  },
+  carrierBadge: {
+    position: 'absolute',
+    left: 8,
+    top: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 32,
+  },
+  carrierLogo: {
+    width: 20,
+    height: 20,
+  },
+  carrierIcon: {
+    fontSize: 16,
   },
 });

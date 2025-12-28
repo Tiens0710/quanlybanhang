@@ -4,7 +4,7 @@ export interface CarrierInfo {
     name: string;
     color: string;
     icon: string;
-    logoPath?: string;
+    logoPath?: any; // React Native require() returns number type
 }
 
 // Vietnamese carrier prefix mappings (as of 2024)
@@ -33,17 +33,20 @@ const CARRIER_INFO: Record<string, CarrierInfo> = {
     viettel: {
         name: 'Viettel',
         color: '#E30613',
-        icon: '📱'
+        icon: '📱',
+        logoPath: require('../assets/carriers/viettel_logo.png')
     },
     mobifone: {
         name: 'MobiFone',
         color: '#0066CC',
-        icon: '📱'
+        icon: '📱',
+        logoPath: require('../assets/carriers/mobifone_logo.png')
     },
     vinaphone: {
         name: 'VinaPhone',
         color: '#7B3F9D',
-        icon: '📞'
+        icon: '📞',
+        logoPath: require('../assets/carriers/vinaphone_logo.png')
     },
     vietnamobile: {
         name: 'Vietnamobile',
@@ -71,8 +74,8 @@ export function detectCarrier(phoneNumber: string): CarrierInfo | null {
         .replace(/^\+84/, '0')
         .replace(/^84/, '0');
 
-    // Check if it's a valid Vietnamese mobile number (10 digits starting with 0)
-    if (!/^0\d{9}$/.test(normalized)) {
+    // Check if it starts with 0 and has at least 3 digits
+    if (!/^0\d{2,}$/.test(normalized)) {
         return null;
     }
 
