@@ -103,7 +103,7 @@ export const PromotionsScreen: React.FC = () => {
     type: 'percentage',
     status: 'upcoming'
   });
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -427,8 +427,8 @@ export const PromotionsScreen: React.FC = () => {
                 style={styles.input}
                 placeholder={
                   newPromo.type === 'percentage' ? 'Phần trăm giảm (VD: 15)' :
-                  newPromo.type === 'fixed' ? 'Số tiền giảm (VD: 20000)' :
-                  'Số lượng tặng (VD: 1)'
+                    newPromo.type === 'fixed' ? 'Số tiền giảm (VD: 20000)' :
+                      'Số lượng tặng (VD: 1)'
                 }
                 value={newPromo.value?.toString() || ''}
                 onChangeText={(text) => setNewPromo({ ...newPromo, value: parseInt(text) || 0 })}

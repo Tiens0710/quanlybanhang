@@ -45,14 +45,6 @@ interface CartItem extends Product {
 const categories = ['Tất cả', 'Đồ uống', 'Thức ăn', 'Snack'];
 
 const products: Product[] = [
-  { id: '1', name: 'Coca Cola', price: 15000, emoji: '🥤', category: 'Đồ uống', stock: 50 },
-  { id: '2', name: 'Bánh mì', price: 25000, emoji: '🥖', category: 'Thức ăn', stock: 30 },
-  { id: '3', name: 'Kẹo', price: 5000, emoji: '🍬', category: 'Snack', stock: 100 },
-  { id: '4', name: 'Nước suối', price: 8000, emoji: '💧', category: 'Đồ uống', stock: 80 },
-  { id: '5', name: 'Cà phê', price: 30000, emoji: '☕', category: 'Đồ uống', stock: 45 },
-  { id: '6', name: 'Sandwích', price: 35000, emoji: '🥪', category: 'Thức ăn', stock: 20 },
-  { id: '7', name: 'Snack', price: 12000, emoji: '🍿', category: 'Snack', stock: 60 },
-  { id: '8', name: 'Trà sữa', price: 28000, emoji: '🧋', category: 'Đồ uống', stock: 35 },
 ];
 
 export const POSScreen: React.FC = () => {

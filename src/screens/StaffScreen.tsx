@@ -58,7 +58,7 @@ const roles = [
 ];
 
 const permissions = [
-  'pos_access', 'inventory_view', 'inventory_edit', 'reports_view', 
+  'pos_access', 'inventory_view', 'inventory_edit', 'reports_view',
   'customers_view', 'customers_edit', 'staff_view', 'settings_view'
 ];
 
@@ -128,7 +128,7 @@ export const StaffScreen: React.FC = () => {
     status: 'active',
     permissions: ['pos_access']
   });
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

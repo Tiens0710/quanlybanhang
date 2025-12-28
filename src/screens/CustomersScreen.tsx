@@ -98,7 +98,7 @@ export const CustomersScreen: React.FC = () => {
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showActions, setShowActions] = useState(false);
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const actionAnim = new Animated.Value(0);
 
   useEffect(() => {

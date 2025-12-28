@@ -1,6 +1,6 @@
 export const colors = {
   primary: '#4F46E5',
-  secondary: '#059669', 
+  secondary: '#059669',
   warning: '#D97706',
   danger: '#DC2626',
   background: '#FFFFFF',
@@ -8,9 +8,9 @@ export const colors = {
   card: '#FFFFFF',
   cardBorder: '#E2E8F0',
   text: '#1E293B',
-  textSecondary: '#64748B',
-  textLight: '#94A3B8',
-  divider: '#F1F5F9',
+  textSecondary: '#475569',
+  textLight: '#64748B',
+  divider: '#E2E8F0',
   overlay: 'rgba(0,0,0,0.1)',
   success: '#059669',
   gradient: ['#FFFFFF', '#F8FAFC']

@@ -17,6 +17,7 @@ import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { SearchBar } from '../components/common/SearchBar';
 import { colors, typography, spacing, borderRadius, shadows } from '../constants/theme';
+import { getProducts, createProduct, Product as DBProduct } from '../services/productService';
 
 interface PurchaseOrder {
   id: string;
@@ -112,7 +113,18 @@ export const PurchaseOrderScreen: React.FC = () => {
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [newPOItems, setNewPOItems] = useState<POItem[]>([]);
-  const fadeAnim = new Animated.Value(0);
+  const [availableProducts, setAvailableProducts] = useState<DBProduct[]>([]);
+  const [showAddProductForm, setShowAddProductForm] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductSKU, setNewProductSKU] = useState('');
+  const [newProductCost, setNewProductCost] = useState('');
+  const [newProductPrice, setNewProductPrice] = useState('');
+  const [newProductQty, setNewProductQty] = useState('1');
+  const [suppliers, setSuppliers] = useState<Supplier[]>(sampleSuppliers);
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [newSupplierContact, setNewSupplierContact] = useState('');
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -120,7 +132,69 @@ export const PurchaseOrderScreen: React.FC = () => {
       duration: 500,
       useNativeDriver: true,
     }).start();
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    try {
+      const products = await getProducts();
+      setAvailableProducts(products);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  const handleAddProduct = async () => {
+    if (!newProductName || !newProductCost) {
+      Alert.alert('Lỗi', 'Vui lòng nhập tên và giá nhập');
+      return;
+    }
+    try {
+      const productId = await createProduct({
+        name: newProductName,
+        sku: newProductSKU || `SKU${Date.now()}`,
+        price: parseFloat(newProductPrice) || parseFloat(newProductCost),
+        cost_price: parseFloat(newProductCost),
+        stock: parseInt(newProductQty) || 0,
+        category: 'Chưa phân loại',
+      });
+
+      // Add to PO items
+      const newItem: POItem = {
+        id: Date.now().toString(),
+        productName: newProductName,
+        sku: newProductSKU || `SKU${Date.now()}`,
+        quantity: parseInt(newProductQty) || 1,
+        unitCost: parseFloat(newProductCost),
+        total: parseFloat(newProductCost) * (parseInt(newProductQty) || 1),
+      };
+      setNewPOItems([...newPOItems, newItem]);
+
+      // Reset form
+      setNewProductName('');
+      setNewProductSKU('');
+      setNewProductCost('');
+      setNewProductPrice('');
+      setNewProductQty('1');
+      setShowAddProductForm(false);
+      await loadProducts();
+      Alert.alert('Thành công', 'Đã thêm sản phẩm vào đơn!');
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể tạo sản phẩm');
+    }
+  };
+
+  const handleSelectProduct = (product: DBProduct) => {
+    const newItem: POItem = {
+      id: Date.now().toString(),
+      productName: product.name,
+      sku: product.sku || '',
+      quantity: 1,
+      unitCost: product.cost_price || 0,
+      total: product.cost_price || 0,
+    };
+    setNewPOItems([...newPOItems, newItem]);
+  };
 
   const getFilteredPOs = () => {
     let filtered = purchaseOrders.filter(po =>
@@ -323,11 +397,227 @@ export const PurchaseOrderScreen: React.FC = () => {
               <Icon name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
-          <View style={styles.modalContent}>
-            <Text style={styles.placeholderText}>Tính năng đang phát triển...</Text>
+          <ScrollView style={styles.modalContent}>
+            {/* Supplier Selection */}
+            <View style={styles.section}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.sectionTitle}>Nhà cung cấp</Text>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={() => setShowAddSupplier(!showAddSupplier)}
+                >
+                  <Icon name={showAddSupplier ? "remove" : "add"} size={20} color={colors.primary} />
+                  <Text style={{ color: colors.primary, marginLeft: 4 }}>
+                    {showAddSupplier ? 'Đóng' : 'Thêm NCC'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Add Supplier Form */}
+              {showAddSupplier && (
+                <Card style={{ marginBottom: spacing.md, padding: spacing.md }}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Tên nhà cung cấp *"
+                    value={newSupplierName}
+                    onChangeText={setNewSupplierName}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Số điện thoại"
+                    value={newSupplierContact}
+                    onChangeText={setNewSupplierContact}
+                    keyboardType="phone-pad"
+                  />
+                  <Button
+                    title="Thêm nhà cung cấp"
+                    onPress={() => {
+                      if (!newSupplierName) {
+                        Alert.alert('Lỗi', 'Vui lòng nhập tên nhà cung cấp');
+                        return;
+                      }
+                      const newSupplier: Supplier = {
+                        id: Date.now().toString(),
+                        name: newSupplierName,
+                        contact: newSupplierContact,
+                        email: '',
+                        address: '',
+                      };
+                      setSuppliers([...suppliers, newSupplier]);
+                      setSelectedSupplier(newSupplier);
+                      setNewSupplierName('');
+                      setNewSupplierContact('');
+                      setShowAddSupplier(false);
+                    }}
+                  />
+                </Card>
+              )}
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+                {suppliers.map(supplier => (
+                  <TouchableOpacity
+                    key={supplier.id}
+                    style={[
+                      styles.supplierCard,
+                      selectedSupplier?.id === supplier.id && styles.supplierCardActive
+                    ]}
+                    onPress={() => setSelectedSupplier(supplier)}
+                  >
+                    <Text style={[
+                      styles.supplierName,
+                      selectedSupplier?.id === supplier.id && { color: colors.background }
+                    ]}>
+                      {supplier.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Products List */}
+            <View style={styles.section}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.sectionTitle}>Sản phẩm</Text>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={() => setShowAddProductForm(!showAddProductForm)}
+                >
+                  <Icon name={showAddProductForm ? "remove" : "add"} size={20} color={colors.primary} />
+                  <Text style={{ color: colors.primary, marginLeft: 4 }}>
+                    {showAddProductForm ? 'Đóng' : 'Thêm'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Add Product Form */}
+              {showAddProductForm && (
+                <Card style={{ marginBottom: spacing.md, padding: spacing.md }}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Tên sản phẩm *"
+                    value={newProductName}
+                    onChangeText={setNewProductName}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="SKU (tự động nếu để trống)"
+                    value={newProductSKU}
+                    onChangeText={setNewProductSKU}
+                  />
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      placeholder="Giá nhập *"
+                      value={newProductCost}
+                      onChangeText={setNewProductCost}
+                      keyboardType="numeric"
+                    />
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      placeholder="Giá bán"
+                      value={newProductPrice}
+                      onChangeText={setNewProductPrice}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Số lượng"
+                    value={newProductQty}
+                    onChangeText={setNewProductQty}
+                    keyboardType="numeric"
+                  />
+                  <Button title="Thêm sản phẩm" onPress={handleAddProduct} />
+                </Card>
+              )}
+
+              {/* Current PO Items */}
+              {newPOItems.map((item, index) => (
+                <Card key={index} style={{ marginBottom: spacing.sm, padding: spacing.md }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: '600', fontSize: 16 }}>{item.productName}</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>SKU: {item.sku}</Text>
+                      <Text style={{ color: colors.primary, marginTop: 4 }}>
+                        SL: {item.quantity} × {item.unitCost.toLocaleString('vi-VN')}đ = {item.total.toLocaleString('vi-VN')}đ
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setNewPOItems(newPOItems.filter((_, i) => i !== index))}
+                    >
+                      <Icon name="delete" size={24} color={colors.danger} />
+                    </TouchableOpacity>
+                  </View>
+                </Card>
+              ))}
+
+              {newPOItems.length === 0 && !showAddProductForm && (
+                <Text style={{ textAlign: 'center', color: colors.textLight, padding: spacing.lg }}>
+                  Chưa có sản phẩm. Nhấn "Thêm" để bắt đầu!
+                </Text>
+              )}
+
+              {/* Quick select from existing products */}
+              {!showAddProductForm && availableProducts.length > 0 && (
+                <View style={{ marginTop: spacing.md }}>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: spacing.sm }}>
+                    Hoặc chọn từ danh sách có sẵn:
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {availableProducts.slice(0, 10).map((product) => (
+                      <TouchableOpacity
+                        key={product.id}
+                        style={styles.productChip}
+                        onPress={() => handleSelectProduct(product)}
+                      >
+                        <Text style={{ fontSize: 12 }}>{product.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            {/* Total */}
+            {newPOItems.length > 0 && (
+              <View style={{ backgroundColor: colors.backgroundSecondary, padding: spacing.md, borderRadius: borderRadius.md }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Tổng đơn:</Text>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.primary }}>
+                    {newPOItems.reduce((sum, item) => sum + item.total, 0).toLocaleString('vi-VN')}đ
+                  </Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Footer Buttons */}
+          <View style={{ padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.divider, flexDirection: 'row', gap: spacing.sm }}>
             <Button
-              title="Đóng"
-              onPress={() => setShowCreatePO(false)}
+              title="Hủy"
+              variant="outline"
+              onPress={() => {
+                setShowCreatePO(false);
+                setNewPOItems([]);
+                setSelectedSupplier(null);
+              }}
+            />
+            <Button
+              title="Lưu đơn"
+              onPress={() => {
+                if (!selectedSupplier) {
+                  Alert.alert('Lỗi', 'Vui lòng chọn nhà cung cấp');
+                  return;
+                }
+                if (newPOItems.length === 0) {
+                  Alert.alert('Lỗi', 'Vui lòng thêm ít nhất 1 sản phẩm');
+                  return;
+                }
+                Alert.alert('Thành công', 'Đã tạo đơn nhập hàng!');
+                setShowCreatePO(false);
+                setNewPOItems([]);
+                setSelectedSupplier(null);
+              }}
             />
           </View>
         </SafeAreaView>
@@ -521,7 +811,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: colors.divider,
+    borderTopColor: colors.cardBorder,
     paddingTop: spacing.sm,
   },
   poTotal: {
@@ -565,7 +855,6 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: spacing.md,
-    justifyContent: 'center',
   },
   placeholderText: {
     ...typography.body,
@@ -597,5 +886,58 @@ const styles = StyleSheet.create({
   detailItems: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  // PO Form Styles
+  section: {
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  supplierCard: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.backgroundSecondary,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    minWidth: 120,
+  },
+  supplierCardActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  supplierName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: borderRadius.sm,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    fontSize: 14,
+  },
+  productChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.md,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
 });

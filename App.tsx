@@ -26,6 +26,8 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 // Import theme
 import { colors, typography, spacing, borderRadius } from './src/constants/theme';
 import type { RootStackParamList } from './src/types/navigation';
+import { initDatabase } from './src/services/database';
+import { migrateFromAsyncStorage } from './src/services/migrationService';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -224,11 +226,25 @@ const RootNavigator = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       setIsLoading(true);
-      // Add your authentication logic here
-      // For example: check AsyncStorage for auth token
-      setTimeout(() => {
+
+      try {
+        // Initialize SQLite database
+        console.log('[App] Initializing database...');
+        await initDatabase();
+        console.log('[App] Database initialized successfully');
+
+        // Migrate data from AsyncStorage to SQLite
+        console.log('[App] Running migration...');
+        await migrateFromAsyncStorage();
+        console.log('[App] Migration completed');
+
+        // Add your authentication logic here
+        // For example: check AsyncStorage for auth token
+      } catch (error) {
+        console.error('[App] Error initializing database:', error);
+      } finally {
         setIsLoading(false);
-      }, 1000);
+      }
     };
 
     checkAuthStatus();

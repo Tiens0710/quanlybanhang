@@ -16,7 +16,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -24,6 +23,8 @@ import type { RootStackParamList, InvoiceData, InvoiceItem } from '../types/navi
 import { classifyProduct, ClassificationResult, getProductSuggestions } from '../services/geminiService';
 import { distance as levenshteinDistance } from 'fastest-levenshtein';
 import { detectCarrier, CarrierInfo } from '../utils/phoneCarrierUtils';
+import { getProducts as loadProductsFromDB, createProduct as createProductInDB, updateProduct as updateProductInDB, deleteProduct as deleteProductFromDB, searchProducts as searchProductsInDB, Product as DBProduct } from '../services/productService';
+import { createInvoice, Invoice, InvoiceItem as DBInvoiceItem } from '../services/invoiceService';
 
 // Navigation type
 type AddItemsNavigationProp = StackNavigationProp<RootStackParamList, 'AddItemsScreen'>;
@@ -246,13 +247,18 @@ const AddItemsScreen = () => {
   // Database functions
   const loadProducts = async () => {
     try {
-      const storedProducts = await AsyncStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      if (storedProducts) {
-        const products: Product[] = JSON.parse(storedProducts);
-        setProductList(products);
-      } else {
-        await initializeDefaultProducts();
-      }
+      const dbProducts = await loadProductsFromDB();
+      // Transform DB products to app format
+      const products: Product[] = dbProducts.map(p => ({
+        id: p.id!,
+        name: p.name,
+        price: p.price,
+        aliases: p.aliases || [],
+        image: p.image || '',
+        createdAt: p.created_at || new Date().toISOString(),
+        updatedAt: p.updated_at || new Date().toISOString(),
+      }));
+      setProductList(products);
     } catch (error) {
       console.error('Error loading products:', error);
       Alert.alert('Lỗi', 'Không thể tải danh sách sản phẩm');
@@ -262,41 +268,19 @@ const AddItemsScreen = () => {
   };
 
   const initializeDefaultProducts = async () => {
-    try {
-      const products: Product[] = defaultProducts.map((product, index) => ({
-        ...product,
-        id: index + 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
-      await AsyncStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-      await AsyncStorage.setItem(STORAGE_KEYS.PRODUCT_ID_COUNTER, (products.length + 1).toString());
-      setProductList(products);
-    } catch (error) {
-      console.error('Error initializing products:', error);
-      Alert.alert('Lỗi', 'Không thể khởi tạo danh sách sản phẩm');
-    }
+    // No longer needed - migration service handles this
+    // This function is kept for backwards compatibility but does nothing
   };
 
   const saveProducts = async (products: Product[]) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-    } catch (error) {
-      console.error('Error saving products:', error);
-      Alert.alert('Lỗi', 'Không thể lưu danh sách sản phẩm');
-    }
+    // Products are now saved individually through additem.tsx/edit operations
+    // This function is kept for backwards compatibility but does nothing
+    console.log('[additem] saveProducts called but skipped (using SQLite now)');
   };
 
   const getNextProductId = async () => {
-    try {
-      const counterStr = await AsyncStorage.getItem(STORAGE_KEYS.PRODUCT_ID_COUNTER);
-      const counter = counterStr ? parseInt(counterStr) : 1;
-      await AsyncStorage.setItem(STORAGE_KEYS.PRODUCT_ID_COUNTER, (counter + 1).toString());
-      return counter;
-    } catch (error) {
-      console.error('Error getting next product ID:', error);
-      return Date.now();
-    }
+    // SQLite auto-increment handles this
+    return 0; // Not used anymore
   };
 
   // Add new product

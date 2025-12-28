@@ -126,7 +126,7 @@ export const ReportsScreen: React.FC = () => {
   const navigation = useNavigation();
   const [selectedTab, setSelectedTab] = useState('Ngày');
   const [selectedDateRange, setSelectedDateRange] = useState('Hôm nay');
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

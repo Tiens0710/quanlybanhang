@@ -1,19 +1,32 @@
 // src/hooks/useInventory.ts
 import { useState, useEffect } from 'react';
 import {
-  InventoryItem,
-  CreateProductInput,
-  UpdateProductInput,
-  getAllProducts,
-  searchProducts,
-  getProductsByFilter,
-  updateStock,
-  deleteProduct,
-  addProduct,
-  updateProduct,
-  initDatabase,
-  seedSampleData,
-} from '../database';
+  getProducts,
+  createProduct,
+  updateProduct as updateProductInDB,
+  deleteProduct as deleteProductFromDB,
+  searchProducts as searchProductsInDB,
+  getLowStockProducts,
+  Product as DBProduct,
+} from '../services/productService';
+import { InventoryItem } from '../database';
+
+// Convert DBProduct to InventoryItem format
+function mapDBProductToInventoryItem(product: DBProduct): InventoryItem {
+  return {
+    id: product.id?.toString() || '',
+    name: product.name,
+    sku: product.sku || `SKU${product.id}`,
+    category: product.category || 'Chưa phân loại',
+    price: product.price,
+    cost: product.cost_price || 0,
+    stock: product.stock || 0,
+    minStock: product.min_stock || 10,
+    supplier: product.supplier || 'Chưa xác định',
+    image: product.image || '📦',
+    lastUpdated: product.updated_at || new Date().toISOString().split('T')[0],
+  };
+}
 
 export const useInventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -24,8 +37,9 @@ export const useInventory = () => {
     try {
       setLoading(true);
       setError(null);
-      const products = await getAllProducts();
-      setInventory(products);
+      const dbProducts = await getProducts();
+      const inventoryItems = dbProducts.map(mapDBProductToInventoryItem);
+      setInventory(inventoryItems);
     } catch (err) {
       setError('Không thể tải danh sách sản phẩm');
       console.error('Load inventory error:', err);
@@ -34,9 +48,19 @@ export const useInventory = () => {
     }
   };
 
-  const addNewProduct = async (product: CreateProductInput) => {
+  const addNewProduct = async (product: any) => {
     try {
-      await addProduct(product);
+      await createProduct({
+        name: product.name,
+        sku: product.sku,
+        price: product.price,
+        cost_price: product.cost,
+        stock: product.stock || 0,
+        min_stock: product.minStock || 10,
+        category: product.category,
+        supplier: product.supplier,
+        image: product.image,
+      });
       await loadInventory();
       return true;
     } catch (err) {
@@ -46,9 +70,19 @@ export const useInventory = () => {
     }
   };
 
-  const updateExistingProduct = async (id: number, updates: UpdateProductInput) => {
+  const updateExistingProduct = async (id: number, updates: any) => {
     try {
-      await updateProduct(id, updates);
+      await updateProductInDB(id, {
+        name: updates.name,
+        sku: updates.sku,
+        price: updates.price,
+        cost_price: updates.cost,
+        stock: updates.stock,
+        min_stock: updates.minStock,
+        category: updates.category,
+        supplier: updates.supplier,
+        image: updates.image,
+      });
       await loadInventory();
       return true;
     } catch (err) {
@@ -60,7 +94,7 @@ export const useInventory = () => {
 
   const updateProductStock = async (productId: number, newStock: number, reason?: string) => {
     try {
-      await updateStock(productId, newStock, reason);
+      await updateProductInDB(productId, { stock: newStock });
       await loadInventory();
       return true;
     } catch (err) {
@@ -72,7 +106,7 @@ export const useInventory = () => {
 
   const removeProduct = async (productId: number) => {
     try {
-      await deleteProduct(productId);
+      await deleteProductFromDB(productId);
       await loadInventory();
       return true;
     } catch (err) {
@@ -84,8 +118,8 @@ export const useInventory = () => {
 
   const searchInventory = async (searchText: string) => {
     try {
-      const products = await searchProducts(searchText);
-      return products;
+      const dbProducts = await searchProductsInDB(searchText);
+      return dbProducts.map(mapDBProductToInventoryItem);
     } catch (err) {
       setError('Không thể tìm kiếm sản phẩm');
       console.error('Search products error:', err);
@@ -95,8 +129,24 @@ export const useInventory = () => {
 
   const getFilteredProducts = async (filter: 'low_stock' | 'out_of_stock' | 'recent') => {
     try {
-      const products = await getProductsByFilter(filter);
-      return products;
+      let dbProducts: DBProduct[] = [];
+
+      if (filter === 'low_stock') {
+        dbProducts = await getLowStockProducts();
+      } else if (filter === 'out_of_stock') {
+        const allProducts = await getProducts();
+        dbProducts = allProducts.filter(p => (p.stock || 0) === 0);
+      } else if (filter === 'recent') {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const allProducts = await getProducts();
+        dbProducts = allProducts.filter(p => {
+          if (!p.updated_at) return false;
+          return new Date(p.updated_at) >= weekAgo;
+        });
+      }
+
+      return dbProducts.map(mapDBProductToInventoryItem);
     } catch (err) {
       setError('Không thể lọc sản phẩm');
       console.error('Filter products error:', err);
@@ -105,28 +155,12 @@ export const useInventory = () => {
   };
 
   const initializeSampleData = async () => {
-    try {
-      await seedSampleData();
-      await loadInventory();
-    } catch (err) {
-      setError('Không thể tạo dữ liệu mẫu');
-      console.error('Seed data error:', err);
-    }
+    // No longer needed - migration handles this
+    console.log('[useInventory] Sample data initialization skipped - using migration');
   };
 
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        await initDatabase();
-        await initializeSampleData(); // Tạo dữ liệu mẫu nếu chưa có
-        await loadInventory();
-      } catch (err) {
-        setError('Không thể khởi tạo ứng dụng');
-        console.error('Initialize app error:', err);
-      }
-    };
-
-    initializeApp();
+    loadInventory();
   }, []);
 
   return {

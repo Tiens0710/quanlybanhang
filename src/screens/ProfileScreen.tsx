@@ -93,7 +93,7 @@ const subscriptionInfo = {
 
 export const ProfileScreen: React.FC = () => {
   const [settings, setSettings] = useState(profileSettings);
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -133,7 +133,7 @@ export const ProfileScreen: React.FC = () => {
       'Bạn có muốn nâng cấp lên gói Enterprise để sử dụng đầy đủ tính năng?',
       [
         { text: 'Hủy', style: 'cancel' },
-        { text: 'Nâng cấp', onPress: () => {} }
+        { text: 'Nâng cấp', onPress: () => { } }
       ]
     );
   };
@@ -143,9 +143,9 @@ export const ProfileScreen: React.FC = () => {
       'Hỗ trợ khách hàng',
       'Chọn phương thức liên hệ hỗ trợ',
       [
-        { text: 'Email', onPress: () => {} },
-        { text: 'Điện thoại', onPress: () => {} },
-        { text: 'Chat', onPress: () => {} },
+        { text: 'Email', onPress: () => { } },
+        { text: 'Điện thoại', onPress: () => { } },
+        { text: 'Chat', onPress: () => { } },
         { text: 'Hủy', style: 'cancel' }
       ]
     );

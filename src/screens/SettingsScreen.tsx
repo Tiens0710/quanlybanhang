@@ -131,7 +131,7 @@ export const SettingsScreen: React.FC = () => {
     timezone: 'Asia/Ho_Chi_Minh'
   });
   const [detectedCarrier, setDetectedCarrier] = useState<CarrierInfo | null>(null);
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

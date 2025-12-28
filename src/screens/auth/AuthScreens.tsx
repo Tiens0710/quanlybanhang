@@ -30,7 +30,7 @@ export const LoginScreen: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = new Animated.Value(50);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export const LoginScreen: React.FC = () => {
       'Vui lòng liên hệ quản trị viên để được hỗ trợ',
       [
         { text: 'Hủy', style: 'cancel' },
-        { text: 'Liên hệ', onPress: () => {} }
+        { text: 'Liên hệ', onPress: () => { } }
       ]
     );
   };

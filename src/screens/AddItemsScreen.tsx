@@ -89,7 +89,7 @@ export const AddItemsScreen: React.FC = () => {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showUnitModal, setShowUnitModal] = useState(false);
   const [newTag, setNewTag] = useState('');
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
