@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,14 @@ import {
   ScrollView,
   Alert,
   StatusBar,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { getProducts, searchProducts, Product as DBProduct } from '../services/productService';
+import { createInvoice, Invoice, InvoiceItem } from '../services/invoiceService';
 
 // Modern Color Palette - Clean & Minimal
 const colors = {
@@ -40,18 +44,104 @@ interface Product {
 
 interface CartItem extends Product {
   quantity: number;
+  itemDiscount?: number;
 }
 
-const categories = ['Tất cả', 'Đồ uống', 'Thức ăn', 'Snack'];
-
-const products: Product[] = [
-];
+const DEFAULT_CATEGORIES = ['Tất cả'];
 
 export const POSScreen: React.FC = () => {
   const navigation = useNavigation();
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<'percent' | 'amount'>('percent');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  // Load products from database
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const dbProducts = await getProducts();
+      const mappedProducts: Product[] = dbProducts.map(p => ({
+        id: p.id?.toString() || '',
+        name: p.name,
+        price: p.price,
+        emoji: getEmojiForCategory(p.category || ''),
+        category: p.category || 'Chưa phân loại',
+        stock: p.stock || 0,
+      }));
+      setProducts(mappedProducts);
+
+      // Extract unique categories from products
+      const uniqueCategories = [...new Set(mappedProducts.map(p => p.category))];
+      setCategories(['Tất cả', ...uniqueCategories.filter(c => c !== 'Tất cả')]);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      Alert.alert('Lỗi', 'Không thể tải danh sách sản phẩm');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập tên danh mục');
+      return;
+    }
+    if (categories.includes(newCategoryName.trim())) {
+      Alert.alert('Lỗi', 'Danh mục này đã tồn tại');
+      return;
+    }
+    setCategories([...categories, newCategoryName.trim()]);
+    setSelectedCategory(newCategoryName.trim());
+    setNewCategoryName('');
+    setShowAddCategory(false);
+  };
+
+  const getEmojiForCategory = (category: string): string => {
+    const emojiMap: { [key: string]: string } = {
+      'Đồ uống': '🥤',
+      'Thức ăn': '🍔',
+      'Snack': '🍿',
+      'Chưa phân loại': '📦',
+    };
+    return emojiMap[category] || '📦';
+  };
+
+  // Search products
+  const handleSearch = async (text: string) => {
+    setSearchText(text);
+    if (text.trim() === '') {
+      loadProducts();
+      return;
+    }
+    try {
+      const results = await searchProducts(text);
+      const mappedProducts: Product[] = results.map(p => ({
+        id: p.id?.toString() || '',
+        name: p.name,
+        price: p.price,
+        emoji: getEmojiForCategory(p.category || ''),
+        category: p.category || 'Chưa phân loại',
+        stock: p.stock || 0,
+      }));
+      setProducts(mappedProducts);
+    } catch (error) {
+      console.error('Error searching products:', error);
+    }
+  };
 
   const filteredProducts = products.filter(
     p => selectedCategory === 'Tất cả' || p.category === selectedCategory
@@ -83,50 +173,125 @@ export const POSScreen: React.FC = () => {
     );
   };
 
-  const getTotalAmount = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const getSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const getTotalItems = () => cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleCheckout = () => {
-    Alert.alert(
-      'Thanh toán thành công! 🎉',
-      `Tổng tiền: ${getTotalAmount().toLocaleString('vi-VN')}đ`,
-      [
-        { text: 'Hoàn thành', onPress: () => { setCart([]); setShowCart(false); } }
-      ]
-    );
+  const getDiscountAmount = () => {
+    const subtotal = getSubtotal();
+    if (discountType === 'percent') {
+      return Math.round(subtotal * (discount / 100));
+    }
+    return discount;
+  };
+
+  const getTotalAmount = () => {
+    const subtotal = getSubtotal();
+    const discountAmount = getDiscountAmount();
+    return Math.max(0, subtotal - discountAmount);
+  };
+
+  const generateInvoiceNumber = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const timeStr = now.getTime().toString().slice(-6);
+    return `HD${dateStr}${timeStr}`;
+  };
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      Alert.alert('Lỗi', 'Giỏ hàng trống');
+      return;
+    }
+
+    try {
+      const subtotal = getSubtotal();
+      const discountAmount = getDiscountAmount();
+      const total = getTotalAmount();
+
+      const invoice: Invoice = {
+        invoice_number: generateInvoiceNumber(),
+        customer_name: customerName || undefined,
+        customer_phone: customerPhone || undefined,
+        subtotal: subtotal,
+        discount: discountAmount,
+        total: total,
+        amount_paid: total,
+        cashier: 'POS',
+      };
+
+      const items: InvoiceItem[] = cart.map(item => ({
+        product_id: parseInt(item.id),
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        discount: item.itemDiscount || 0,
+        total: item.price * item.quantity,
+      }));
+
+      await createInvoice(invoice, items);
+
+      Alert.alert(
+        'Thanh toán thành công! 🎉',
+        `Mã HĐ: ${invoice.invoice_number}\nTổng tiền: ${total.toLocaleString('vi-VN')}đ${discountAmount > 0 ? `\nGiảm giá: -${discountAmount.toLocaleString('vi-VN')}đ` : ''}`,
+        [{
+          text: 'Hoàn thành',
+          onPress: () => {
+            setCart([]);
+            setShowCart(false);
+            setDiscount(0);
+            setCustomerName('');
+            setCustomerPhone('');
+            loadProducts(); // Refresh to update stock
+          }
+        }]
+      );
+    } catch (error) {
+      console.error('Checkout error:', error);
+      Alert.alert('Lỗi', 'Không thể lưu hóa đơn. Vui lòng thử lại.');
+    }
   };
 
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Clean Header */}
+        {/* Compact Header */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.backButton}
-            >
-              <Icon name="arrow-back" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <View>
-              <Text style={styles.headerTitle}>Bán hàng</Text>
-              <Text style={styles.headerSubtitle}>POS System</Text>
-            </View>
-          </View>
-
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Icon name="arrow-back" size={22} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Bán hàng</Text>
           <TouchableOpacity
             style={styles.cartButton}
             onPress={() => setShowCart(true)}
           >
-            <Icon name="shopping-cart" size={24} color={colors.surface} />
+            <Icon name="shopping-cart" size={22} color={colors.text} />
             {getTotalItems() > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
               </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Icon name="search" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm sản phẩm..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchText}
+            onChangeText={handleSearch}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <Icon name="close" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Categories */}
@@ -153,34 +318,52 @@ export const POSScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           ))}
+          {/* Add Category Button */}
+          <TouchableOpacity
+            style={styles.addCategoryChip}
+            onPress={() => setShowAddCategory(true)}
+          >
+            <Icon name="add" size={18} color={colors.primary} />
+          </TouchableOpacity>
         </ScrollView>
 
         {/* Products Grid */}
-        <FlatList
-          data={filteredProducts}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.productCard}
-              onPress={() => addToCart(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.productEmoji}>
-                <Text style={styles.emojiText}>{item.emoji}</Text>
-              </View>
-              <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.productPrice}>
-                {item.price.toLocaleString('vi-VN')}đ
-              </Text>
-              <View style={styles.stockBadge}>
-                <Text style={styles.stockText}>Kho: {item.stock}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          numColumns={2}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.productsGrid}
-          showsVerticalScrollIndicator={false}
-        />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Đang tải sản phẩm...</Text>
+          </View>
+        ) : filteredProducts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Icon name="inventory" size={48} color={colors.textLight} />
+            <Text style={styles.emptyText}>Không có sản phẩm nào</Text>
+            <Text style={styles.emptySubtext}>Thêm sản phẩm từ màn hình Nhập hàng</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredProducts}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.productCard}
+                onPress={() => addToCart(item)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.productImageBox}>
+                  <Text style={styles.emojiText}>{item.emoji}</Text>
+                </View>
+                <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                <Text style={styles.productPrice}>
+                  {item.price.toLocaleString('vi-VN')}đ
+                </Text>
+              </TouchableOpacity>
+            )}
+            numColumns={2}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.productsGrid}
+            showsVerticalScrollIndicator={false}
+            columnWrapperStyle={styles.productRow}
+          />
+        )}
 
         {/* Floating Cart Summary */}
         {cart.length > 0 && (
@@ -256,13 +439,52 @@ export const POSScreen: React.FC = () => {
               ))}
             </ScrollView>
 
+            {/* Discount Section */}
+            <View style={styles.discountSection}>
+              <Text style={styles.discountTitle}>Giảm giá</Text>
+              <View style={styles.discountRow}>
+                <TextInput
+                  style={styles.discountInput}
+                  placeholder="0"
+                  placeholderTextColor={colors.textLight}
+                  keyboardType="numeric"
+                  value={discount > 0 ? discount.toString() : ''}
+                  onChangeText={(text) => setDiscount(parseInt(text) || 0)}
+                />
+                <TouchableOpacity
+                  style={[styles.discountTypeBtn, discountType === 'percent' && styles.discountTypeBtnActive]}
+                  onPress={() => setDiscountType('percent')}
+                >
+                  <Text style={[styles.discountTypeText, discountType === 'percent' && styles.discountTypeTextActive]}>%</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.discountTypeBtn, discountType === 'amount' && styles.discountTypeBtnActive]}
+                  onPress={() => setDiscountType('amount')}
+                >
+                  <Text style={[styles.discountTypeText, discountType === 'amount' && styles.discountTypeTextActive]}>VNĐ</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Checkout Footer */}
             <View style={styles.checkoutFooter}>
               <View style={styles.totalSection}>
-                <Text style={styles.totalLabel}>Tổng cộng</Text>
-                <Text style={styles.totalAmount}>
-                  {getTotalAmount().toLocaleString('vi-VN')}đ
-                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: colors.textSecondary }}>Tạm tính</Text>
+                  <Text style={{ color: colors.textSecondary }}>{getSubtotal().toLocaleString('vi-VN')}đ</Text>
+                </View>
+                {getDiscountAmount() > 0 && (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ color: colors.success }}>Giảm giá</Text>
+                    <Text style={{ color: colors.success }}>-{getDiscountAmount().toLocaleString('vi-VN')}đ</Text>
+                  </View>
+                )}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={styles.totalLabel}>Tổng cộng</Text>
+                  <Text style={styles.totalAmount}>
+                    {getTotalAmount().toLocaleString('vi-VN')}đ
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity
                 style={styles.checkoutButton}
@@ -273,6 +495,44 @@ export const POSScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </SafeAreaView>
+        </Modal>
+
+        {/* Add Category Modal */}
+        <Modal
+          visible={showAddCategory}
+          animationType="fade"
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.addCategoryModal}>
+              <Text style={styles.addCategoryTitle}>Thêm danh mục mới</Text>
+              <TextInput
+                style={styles.addCategoryInput}
+                placeholder="Tên danh mục"
+                placeholderTextColor={colors.textLight}
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                autoFocus
+              />
+              <View style={styles.addCategoryButtons}>
+                <TouchableOpacity
+                  style={[styles.addCategoryBtn, styles.addCategoryBtnCancel]}
+                  onPress={() => {
+                    setShowAddCategory(false);
+                    setNewCategoryName('');
+                  }}
+                >
+                  <Text style={styles.addCategoryBtnCancelText}>Hủy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.addCategoryBtn, styles.addCategoryBtnConfirm]}
+                  onPress={handleAddCategory}
+                >
+                  <Text style={styles.addCategoryBtnConfirmText}>Thêm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </Modal>
       </SafeAreaView>
     </>
@@ -292,7 +552,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -305,7 +565,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
@@ -315,13 +575,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cartButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cartBadge: {
     position: 'absolute',
@@ -377,23 +639,30 @@ const styles = StyleSheet.create({
 
   // Products
   productsGrid: {
-    padding: 16,
-    gap: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  productRow: {
+    justifyContent: 'flex-start',
   },
   productCard: {
-    flex: 1,
+    width: '35%',
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    margin: 6,
+    borderRadius: 14,
+    padding: 12,
+    margin: '1.5%',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  },
+  productImageBox: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   productEmoji: {
     width: 64,
@@ -405,20 +674,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emojiText: {
-    fontSize: 32,
+    fontSize: 40,
   },
   productName: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 6,
     textAlign: 'center',
   },
   productPrice: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.primary,
-    marginBottom: 8,
   },
   stockBadge: {
     paddingHorizontal: 8,
@@ -608,5 +876,170 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontSize: 16,
     fontWeight: '700',
+  },
+  // New styles for search, loading, empty, discount
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: colors.text,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginTop: 12,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginTop: 4,
+  },
+  discountSection: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: colors.borderLight,
+    borderRadius: 10,
+  },
+  discountTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  discountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  discountInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  discountTypeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  discountTypeBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  discountTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  discountTypeTextActive: {
+    color: colors.surface,
+  },
+  // Add Category styles
+  addCategoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.background,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addCategoryModal: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    width: '85%',
+    maxWidth: 320,
+  },
+  addCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  addCategoryInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: colors.text,
+    marginBottom: 16,
+  },
+  addCategoryButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addCategoryBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  addCategoryBtnCancel: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  addCategoryBtnConfirm: {
+    backgroundColor: colors.primary,
+  },
+  addCategoryBtnCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  addCategoryBtnConfirmText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.surface,
   },
 });

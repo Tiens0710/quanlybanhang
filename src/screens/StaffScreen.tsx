@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { SearchBar } from '../components/common/SearchBar';
@@ -117,6 +118,7 @@ const sampleStaff: Staff[] = [
 ];
 
 export const StaffScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [staff, setStaff] = useState<Staff[]>(sampleStaff);
   const [showStaffDetail, setShowStaffDetail] = useState(false);
@@ -301,6 +303,9 @@ export const StaffScreen: React.FC = () => {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Icon name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Nhân viên</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity

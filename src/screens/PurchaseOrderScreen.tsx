@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { SearchBar } from '../components/common/SearchBar';
@@ -105,6 +106,7 @@ const samplePOs: PurchaseOrder[] = [
 ];
 
 export const PurchaseOrderScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Tất cả');
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(samplePOs);
@@ -120,6 +122,9 @@ export const PurchaseOrderScreen: React.FC = () => {
   const [newProductCost, setNewProductCost] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductQty, setNewProductQty] = useState('1');
+  const [newProductCategory, setNewProductCategory] = useState('');
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const [productCategories, setProductCategories] = useState(['Đồ uống', 'Thức ăn', 'Snack', 'Điện tử', 'Gia dụng', 'Mỹ phẩm', 'Thời trang', 'Chưa phân loại']);
   const [suppliers, setSuppliers] = useState<Supplier[]>(sampleSuppliers);
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [newSupplierName, setNewSupplierName] = useState('');
@@ -156,7 +161,7 @@ export const PurchaseOrderScreen: React.FC = () => {
         price: parseFloat(newProductPrice) || parseFloat(newProductCost),
         cost_price: parseFloat(newProductCost),
         stock: parseInt(newProductQty) || 0,
-        category: 'Chưa phân loại',
+        category: newProductCategory || 'Chưa phân loại',
       });
 
       // Add to PO items
@@ -176,6 +181,7 @@ export const PurchaseOrderScreen: React.FC = () => {
       setNewProductCost('');
       setNewProductPrice('');
       setNewProductQty('1');
+      setNewProductCategory('');
       setShowAddProductForm(false);
       await loadProducts();
       Alert.alert('Thành công', 'Đã thêm sản phẩm vào đơn!');
@@ -311,7 +317,10 @@ export const PurchaseOrderScreen: React.FC = () => {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Đơn nhập hàng</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Icon name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Nhập hàng</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setShowCreatePO(true)}
@@ -520,6 +529,83 @@ export const PurchaseOrderScreen: React.FC = () => {
                       keyboardType="numeric"
                     />
                   </View>
+
+                  {/* Category Selection with Autocomplete */}
+                  <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: spacing.xs, color: colors.text }}>Phân loại sản phẩm</Text>
+                  <View style={{ position: 'relative', zIndex: 100 }}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Nhập hoặc chọn phân loại..."
+                      value={newProductCategory}
+                      onChangeText={(text) => {
+                        setNewProductCategory(text);
+                        setShowCategorySuggestions(true);
+                      }}
+                      onFocus={() => setShowCategorySuggestions(true)}
+                    />
+                    {showCategorySuggestions && (
+                      <View style={{
+                        position: 'absolute',
+                        top: 50,
+                        left: 0,
+                        right: 0,
+                        backgroundColor: colors.card,
+                        borderWidth: 1,
+                        borderColor: colors.cardBorder,
+                        borderRadius: borderRadius.sm,
+                        maxHeight: 150,
+                        zIndex: 999,
+                        elevation: 5,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                      }}>
+                        <ScrollView nestedScrollEnabled>
+                          {productCategories
+                            .filter(cat =>
+                              newProductCategory === '' ||
+                              cat.toLowerCase().includes(newProductCategory.toLowerCase())
+                            )
+                            .map((cat, index) => (
+                              <TouchableOpacity
+                                key={index}
+                                style={{
+                                  padding: spacing.sm,
+                                  borderBottomWidth: index < productCategories.length - 1 ? 1 : 0,
+                                  borderBottomColor: colors.divider,
+                                  backgroundColor: newProductCategory === cat ? colors.backgroundSecondary : colors.card,
+                                }}
+                                onPress={() => {
+                                  setNewProductCategory(cat);
+                                  setShowCategorySuggestions(false);
+                                }}
+                              >
+                                <Text style={{ color: colors.text, fontSize: 14 }}>{cat}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          {/* Option to create new category */}
+                          {newProductCategory && !productCategories.includes(newProductCategory) && (
+                            <TouchableOpacity
+                              style={{
+                                padding: spacing.sm,
+                                backgroundColor: colors.primary + '10',
+                              }}
+                              onPress={() => {
+                                setProductCategories([...productCategories, newProductCategory]);
+                                setShowCategorySuggestions(false);
+                              }}
+                            >
+                              <Text style={{ color: colors.primary, fontSize: 14 }}>
+                                + Tạo "{newProductCategory}"
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+
                   <TextInput
                     style={styles.input}
                     placeholder="Số lượng"

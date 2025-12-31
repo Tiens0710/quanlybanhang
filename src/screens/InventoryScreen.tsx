@@ -77,6 +77,7 @@ const SearchBar: React.FC<{
 );
 
 export const InventoryScreen: React.FC = () => {
+  const navigation = useNavigation();
   const {
     inventory,
     loading,
@@ -387,7 +388,7 @@ export const InventoryScreen: React.FC = () => {
     );
   }
 
-  const navigation = useNavigation();
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
