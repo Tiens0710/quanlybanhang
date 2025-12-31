@@ -1085,19 +1085,23 @@ const AddItemsScreen = () => {
         <Modal visible={showProductList} animationType="slide" presentationStyle="pageSheet">
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowProductList(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Icon name="arrow-left" size={24} color="#1E293B" />
+              </TouchableOpacity>
               <Text style={styles.modalTitle}>Quản lý sản phẩm</Text>
               <View style={styles.modalHeaderButtons}>
                 <TouchableOpacity style={styles.addButton} onPress={() => setShowAddProduct(true)}>
-                  <Text style={styles.addButtonText}>+ Thêm</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.resetButton} onPress={resetToDefault}>
-                  <Text style={styles.resetButtonText}>↺ Reset</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.closeButton} onPress={() => setShowProductList(false)}>
-                  <Icon name="close" size={24} color="#6b7280" />
+                  <Icon name="plus" size={18} color="#fff" />
+                  <Text style={styles.addButtonText}>Thêm</Text>
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Product Count */}
+            <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
+              <Text style={{ fontSize: 14, color: '#64748B' }}>Tổng cộng: <Text style={{ fontWeight: '600', color: '#1E293B' }}>{productList.length} sản phẩm</Text></Text>
+            </View>
+
             <FlatList
               data={productList}
               renderItem={renderProductItem}
