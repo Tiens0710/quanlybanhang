@@ -30,16 +30,7 @@ const BiometricButton: React.FC<BiometricButtonProps> = ({
 
     const getIconColor = () => {
         if (disabled) return '#ccc';
-        switch (type) {
-            case 'fingerprint':
-                return '#4CAF50';
-            case 'face':
-                return '#2196F3';
-            case 'voice':
-                return '#FF9800';
-            default:
-                return '#4CAF50';
-        }
+        return '#333'; // Black color for all types
     };
 
     return (
@@ -71,8 +62,8 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 70,
         height: 70,
-        borderRadius: 35,
-        borderWidth: 2,
+        borderRadius: 12,
+        borderWidth: 0,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#fff',

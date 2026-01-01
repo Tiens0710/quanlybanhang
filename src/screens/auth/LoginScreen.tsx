@@ -114,7 +114,6 @@ const LoginScreen = ({ navigation }: Props) => {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.logoContainer}>
         <Icon name="store" size={80} color="#0088CC" />
-        <Text style={styles.logoText}>Quản Lý Bán Hàng</Text>
       </View>
 
       <Text style={styles.title}>Đăng nhập để tiếp tục</Text>
@@ -205,9 +204,6 @@ const LoginScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
       </View>
 
-      {/* Biometric section at bottom */}
-      <Text style={styles.dividerText}>HOẶC ĐĂNG NHẬP NHANH VỚI</Text>
-
       <View style={styles.biometricContainer}>
         <BiometricButton
           type="fingerprint"
@@ -240,7 +236,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 80,
     marginBottom: 30,
   },
   logoText: {
@@ -250,12 +246,13 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   title: {
-    marginTop: 60,
+    marginTop: 20,
     fontSize: 16,
     color: '#333',
     marginBottom: 20,
   },
   biometricContainer: {
+    marginTop: 50,
     flexDirection: 'row',
     justifyContent: 'center',
     width: '100%',

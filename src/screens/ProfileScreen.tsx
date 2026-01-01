@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { colors, typography, spacing, borderRadius, shadows } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserProfile {
   name: string;
@@ -94,6 +95,7 @@ const subscriptionInfo = {
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { logout, user } = useAuth();
   const [settings, setSettings] = useState(profileSettings);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -162,9 +164,9 @@ export const ProfileScreen: React.FC = () => {
         {
           text: 'Đăng xuất',
           style: 'destructive',
-          onPress: () => {
-            // Handle logout
-            Alert.alert('Đăng xuất', 'Đã đăng xuất thành công');
+          onPress: async () => {
+            await logout();
+            // Navigation will be handled automatically by AuthContext
           }
         }
       ]
