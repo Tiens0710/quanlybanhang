@@ -1,3 +1,18 @@
+import { StackScreenProps } from '@react-navigation/stack';
+
+// Auth Stack types
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
+  PINSetup: undefined;
+};
+
+export type AuthStackScreenProps<T extends keyof AuthStackParamList> = StackScreenProps<
+  AuthStackParamList,
+  T
+>;
+
 export type RootStackParamList = {
   // Auth Stack
   Auth: undefined;
@@ -10,7 +25,7 @@ export type RootStackParamList = {
   MainApp: undefined;
   MainTabs: undefined;
   ShopManagement: undefined;
-  
+
   // Core Feature Screens
   POS: undefined;
   Inventory: undefined;
@@ -20,7 +35,7 @@ export type RootStackParamList = {
   Promotions: undefined;
   Staff: undefined;
   Settings: undefined;
-  
+
   // Add/Edit Screens (Modal)
   AddItemsScreen: undefined;
   CustomerDetail: { customerId: string };
@@ -28,26 +43,26 @@ export type RootStackParamList = {
   PromotionDetail: { promotionId: string };
   PurchaseOrderDetail: { poId: string };
   ProductDetails: { productId: string };
-  
+
   // Extended Services
   Shipping: undefined;
   Payment: undefined;
   OnlineStore: undefined;
   Analytics: undefined;
-  
+
   // Profile & Settings
   Profile: undefined;
   MoreTab: undefined;
-  
+
   // Invoice & Printing
   InvoiceScreen: {
     invoiceData?: InvoiceData;
   };
-  
+
   // Category & Supplier Management
   CategoryManagement: undefined;
   SupplierManagement: undefined;
-  
+
   // Reports & Analytics Detail
   SalesReport: undefined;
   InventoryReport: undefined;
@@ -88,6 +103,6 @@ export interface InvoiceItem {
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }

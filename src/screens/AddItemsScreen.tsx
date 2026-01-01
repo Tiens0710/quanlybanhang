@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { colors, typography, spacing, borderRadius, shadows } from '../constants/theme';
+import voiceService from '../services/voiceService';
 
 interface ProductForm {
   name: string;
@@ -89,6 +90,8 @@ export const AddItemsScreen: React.FC = () => {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showUnitModal, setShowUnitModal] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -343,12 +346,51 @@ export const AddItemsScreen: React.FC = () => {
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Tên sản phẩm *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập tên sản phẩm"
-                value={productForm.name}
-                onChangeText={(text) => setProductForm({ ...productForm, name: text })}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginRight: 8 }]}
+                  placeholder={isListening ? 'Đang nghe...' : 'Nhập tên sản phẩm'}
+                  value={productForm.name}
+                  onChangeText={(text) => setProductForm({ ...productForm, name: text })}
+                />
+                <TouchableOpacity
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: isListening ? colors.danger : colors.primary,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                  onPress={async () => {
+                    if (isListening) {
+                      await voiceService.stopListening();
+                      setIsListening(false);
+                    } else {
+                      const started = await voiceService.startListening(
+                        (text) => {
+                          setProductForm(prev => ({ ...prev, name: text }));
+                          setIsListening(false);
+                        },
+                        (partial) => setVoiceText(partial),
+                        () => setIsListening(true),
+                        () => setIsListening(false),
+                        (error) => {
+                          Alert.alert('Lỗi', error);
+                          setIsListening(false);
+                        }
+                      );
+                    }
+                  }}
+                >
+                  <Icon name={isListening ? 'stop' : 'mic'} size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              {isListening && voiceText ? (
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>
+                  "{voiceText}"
+                </Text>
+              ) : null}
             </View>
 
             <View style={styles.inputRow}>

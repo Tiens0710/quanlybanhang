@@ -16,13 +16,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common';
 import { colors, typography, spacing, borderRadius, shadows } from '../../constants/theme';
 
+// Re-export LoginScreen from the new file
+export { default as LoginScreen } from './LoginScreen';
+
 interface LoginForm {
   email: string;
   password: string;
   rememberMe: boolean;
 }
 
-export const LoginScreen: React.FC = () => {
+export const LegacyLoginScreen: React.FC = () => {
   const [loginForm, setLoginForm] = useState<LoginForm>({
     email: '',
     password: '',

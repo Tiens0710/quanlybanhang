@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -21,7 +21,11 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 // Import Auth screens
 import { LoginScreen } from './src/screens/auth/AuthScreens';
 import { RegisterScreen } from './src/screens/auth/RegisterScreen';
+import ForgotPasswordScreen from './src/screens/auth/ForgotPasswordScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+
+// Import Auth Context
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 // Import theme
 import { colors, typography, spacing, borderRadius } from './src/constants/theme';
@@ -78,7 +82,7 @@ const AuthStackNavigator = () => (
   >
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
-    <Stack.Screen name="ForgotPassword" component={LoginScreen} />
+    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
   </Stack.Navigator>
 );
 
@@ -219,14 +223,12 @@ const MainStackNavigator = () => (
 
 // Root Navigator with Authentication
 const RootNavigator = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Set to false for auth flow
-  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+  const [isDbInitialized, setIsDbInitialized] = React.useState(false);
 
-  // Simulate authentication check
+  // Initialize database on app start
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      setIsLoading(true);
-
+    const initApp = async () => {
       try {
         // Initialize SQLite database
         console.log('[App] Initializing database...');
@@ -237,20 +239,17 @@ const RootNavigator = () => {
         console.log('[App] Running migration...');
         await migrateFromAsyncStorage();
         console.log('[App] Migration completed');
-
-        // Add your authentication logic here
-        // For example: check AsyncStorage for auth token
       } catch (error) {
         console.error('[App] Error initializing database:', error);
       } finally {
-        setIsLoading(false);
+        setIsDbInitialized(true);
       }
     };
 
-    checkAuthStatus();
+    initApp();
   }, []);
 
-  if (isLoading) {
+  if (isLoading || !isDbInitialized) {
     return (
       <View style={styles.loadingContainer}>
         <Icon name="store" size={64} color={colors.primary} />
@@ -278,9 +277,11 @@ const App = () => {
         barStyle="dark-content"
         backgroundColor="transparent"
       />
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 };

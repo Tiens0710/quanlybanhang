@@ -25,6 +25,7 @@ import { distance as levenshteinDistance } from 'fastest-levenshtein';
 import { detectCarrier, CarrierInfo } from '../utils/phoneCarrierUtils';
 import { getProducts as loadProductsFromDB, createProduct as createProductInDB, updateProduct as updateProductInDB, deleteProduct as deleteProductFromDB, searchProducts as searchProductsInDB, Product as DBProduct } from '../services/productService';
 import { createInvoice, Invoice, InvoiceItem as DBInvoiceItem } from '../services/invoiceService';
+import voiceService from '../services/voiceService';
 
 // Navigation type
 type AddItemsNavigationProp = StackNavigationProp<RootStackParamList, 'AddItemsScreen'>;
@@ -79,6 +80,8 @@ const AddItemsScreen = () => {
   const [quickAddPrice, setQuickAddPrice] = useState<string>('');
   const [showQuickAdd, setShowQuickAdd] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [voicePartialText, setVoicePartialText] = useState<string>('');
   const aiCooldownRef = useRef<number>(0); // Cooldown timestamp to prevent rate limiting
 
   // Product list state
@@ -1075,8 +1078,31 @@ const AddItemsScreen = () => {
             <TouchableOpacity style={styles.actionButton}>
               <Icon name="camera" size={16} color="#5f6368" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Icon name="microphone" size={16} color="#5f6368" />
+            <TouchableOpacity
+              style={[styles.actionButton, isListening && { backgroundColor: '#EF4444' }]}
+              onPress={async () => {
+                if (isListening) {
+                  await voiceService.stopListening();
+                  setIsListening(false);
+                } else {
+                  const started = await voiceService.startListening(
+                    (text) => {
+                      setInputText(prev => prev ? prev + '\n' + text : text);
+                      setIsListening(false);
+                      setVoicePartialText('');
+                    },
+                    (partial) => setVoicePartialText(partial),
+                    () => setIsListening(true),
+                    () => setIsListening(false),
+                    (error) => {
+                      Alert.alert('Lỗi nhận diện giọng nói', error);
+                      setIsListening(false);
+                    }
+                  );
+                }
+              }}
+            >
+              <Icon name={isListening ? 'stop' : 'microphone'} size={16} color={isListening ? '#fff' : '#5f6368'} />
             </TouchableOpacity>
           </View>
         </View>
