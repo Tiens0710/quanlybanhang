@@ -1,10 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+
+// Configure Google Sign-In
+// Android OAuth works via SHA-1 fingerprint registered in Google Cloud Console
+GoogleSignin.configure({
+    webClientId: '432943984764-tmahc4jdevnuj0grgv92pg74rjf1hsle.apps.googleusercontent.com',
+    scopes: ['profile', 'email'],
+    offlineAccess: true,
+});
 
 interface User {
     id: string;
     email: string;
     name: string;
+    photo?: string;
 }
 
 interface AuthContextType {
@@ -80,24 +90,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const loginWithGoogle = async (): Promise<boolean> => {
         try {
-            // TODO: Replace with actual Google Sign-In implementation
-            // For demo purposes, simulate successful Google login
-            console.log('[AuthContext] Simulating Google Sign-In...');
+            // Check if Google Play Services is available
+            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-            const mockUser: User = {
-                id: 'google_' + Date.now(),
-                email: 'user@gmail.com',
-                name: 'Google User',
+            // Sign in with Google
+            const userInfo = await GoogleSignin.signIn();
+            console.log('[AuthContext] Google Sign-In success:', userInfo);
+
+            const googleUser: User = {
+                id: userInfo.data?.user?.id || 'google_' + Date.now(),
+                email: userInfo.data?.user?.email || '',
+                name: userInfo.data?.user?.name || 'Google User',
+                photo: userInfo.data?.user?.photo || undefined,
             };
 
-            await AsyncStorage.setItem(AUTH_TOKEN_KEY, 'google_token_' + Date.now());
-            await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(mockUser));
+            // Save token and user data
+            const idToken = userInfo.data?.idToken || 'google_token_' + Date.now();
+            await AsyncStorage.setItem(AUTH_TOKEN_KEY, idToken);
+            await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(googleUser));
 
-            setUser(mockUser);
+            setUser(googleUser);
             setIsAuthenticated(true);
             return true;
-        } catch (error) {
-            console.error('Google login error:', error);
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                console.log('[AuthContext] User cancelled Google Sign-In');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                console.log('[AuthContext] Google Sign-In already in progress');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                console.log('[AuthContext] Play Services not available');
+            } else {
+                console.error('[AuthContext] Google Sign-In error:', error);
+            }
             return false;
         }
     };
