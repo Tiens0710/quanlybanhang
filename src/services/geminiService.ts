@@ -4,7 +4,7 @@
  */
 
 // Replace with your actual API key (should be stored securely in production)
-const GEMINI_API_KEY = 'AIzaSyDe9KYnZIVLYkqpdKWqjeWDfH4o0bERIOA';
+const GEMINI_API_KEY = 'AIzaSyBKxPhwbF-3bvIeRl_rjprKapXMLHFtR6k';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // Product categories for the shop
@@ -31,6 +31,13 @@ export interface ClassificationResult {
     confidence: string;
     subcategory?: string;
     tags?: string[];
+}
+
+export interface ParsedProduct {
+    name: string;
+    quantity: number;
+    description?: string;
+    price?: number;
 }
 
 interface GeminiResponse {
@@ -199,8 +206,79 @@ Chỉ trả về JSON array, không có text khác.`;
     }
 }
 
+/**
+ * Parse an image containing a list of products or a single product
+ * @param base64Image - Base64 encoded image string (without data:image/jpeg;base64 prefix)
+ * @returns List of parsed products
+ */
+export async function parseOrderImage(base64Image: string): Promise<ParsedProduct[]> {
+    const prompt = `Phân tích hình ảnh này (có thể là hoá đơn, danh sách viết tay, hoặc sản phẩm thực tế).
+Tìm tất cả tên sản phẩm và số lượng tương ứng.
+Nếu không thấy số lượng, mặc định là 1.
+Nếu thấy giá, hãy trích xuất luôn.
+
+Trả về JSON ARRAY theo format sau (chỉ JSON, không text thừa):
+[
+  { "name": "Tên sản phẩm", "quantity": 1, "price": 100000, "description": "Mô tả ngắn nếu có" }
+]
+
+Ví dụ input: "3 cái táo đỏ, 2 chai nước"
+Output: [{"name": "Táo đỏ", "quantity": 3, "unit": "cái"}, {"name": "Nước", "quantity": 2, "unit": "chai"}]`;
+
+    try {
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [
+                            { text: prompt },
+                            {
+                                inline_data: {
+                                    mime_type: "image/jpeg",
+                                    data: base64Image
+                                }
+                            }
+                        ],
+                    },
+                ],
+                generationConfig: {
+                    temperature: 0.4,
+                    maxOutputTokens: 1024,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json() as GeminiResponse;
+        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!textResponse) {
+            throw new Error('Empty response from Gemini');
+        }
+
+        const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+            throw new Error('Could not parse JSON from response');
+        }
+
+        return JSON.parse(jsonMatch[0]);
+
+    } catch (error) {
+        console.error('Gemini image parsing error:', error);
+        return [];
+    }
+}
+
 export default {
     classifyProduct,
     getCategories,
     getProductSuggestions,
+    parseOrderImage,
 };

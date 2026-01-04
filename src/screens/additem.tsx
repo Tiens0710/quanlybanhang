@@ -26,6 +26,7 @@ import { detectCarrier, CarrierInfo } from '../utils/phoneCarrierUtils';
 import { getProducts as loadProductsFromDB, createProduct as createProductInDB, updateProduct as updateProductInDB, deleteProduct as deleteProductFromDB, searchProducts as searchProductsInDB, Product as DBProduct } from '../services/productService';
 import { createInvoice, Invoice, InvoiceItem as DBInvoiceItem } from '../services/invoiceService';
 import voiceService from '../services/voiceService';
+import VoiceRecognitionModal from '../components/VoiceRecognitionModal';
 
 // Navigation type
 type AddItemsNavigationProp = StackNavigationProp<RootStackParamList, 'AddItemsScreen'>;
@@ -82,6 +83,7 @@ const AddItemsScreen = () => {
   const [aiError, setAiError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [voicePartialText, setVoicePartialText] = useState<string>('');
+  const [showVoiceModal, setShowVoiceModal] = useState<boolean>(false);
   const aiCooldownRef = useRef<number>(0); // Cooldown timestamp to prevent rate limiting
 
   // Product list state
@@ -1056,7 +1058,7 @@ const AddItemsScreen = () => {
           <View style={styles.inputRow}>
             <TextInput
               style={styles.chatInput}
-              placeholder="Nhập sản phẩm cần mua..."
+              placeholder="Nhập sản phẩm..."
               placeholderTextColor="#9aa0a6"
               value={inputText}
               onChangeText={setInputText}
@@ -1068,7 +1070,7 @@ const AddItemsScreen = () => {
               onPress={addToCart}
               disabled={!inputText.trim()}
             >
-              <Icon name="plus" size={20} color="#ffffff" />
+              <Icon name="arrow-right" size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
           <View style={styles.actionButtons}>
@@ -1080,26 +1082,26 @@ const AddItemsScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, isListening && { backgroundColor: '#EF4444' }]}
-              onPress={async () => {
-                if (isListening) {
-                  await voiceService.stopListening();
-                  setIsListening(false);
-                } else {
-                  const started = await voiceService.startListening(
-                    (text) => {
-                      setInputText(prev => prev ? prev + '\n' + text : text);
-                      setIsListening(false);
-                      setVoicePartialText('');
-                    },
-                    (partial) => setVoicePartialText(partial),
-                    () => setIsListening(true),
-                    () => setIsListening(false),
-                    (error) => {
-                      Alert.alert('Lỗi nhận diện giọng nói', error);
-                      setIsListening(false);
-                    }
-                  );
-                }
+              onPress={() => {
+                setShowVoiceModal(true);
+                setVoicePartialText('');
+                setIsListening(true);
+                voiceService.startListening(
+                  (text) => {
+                    setInputText(prev => prev ? prev + '\n' + text : text);
+                    setIsListening(false);
+                    setShowVoiceModal(false);
+                    setVoicePartialText('');
+                  },
+                  (partial) => setVoicePartialText(partial),
+                  () => setIsListening(true),
+                  () => setIsListening(false),
+                  (error) => {
+                    Alert.alert('Lỗi nhận diện giọng nói', error);
+                    setIsListening(false);
+                    setShowVoiceModal(false);
+                  }
+                ).catch(console.error);
               }}
             >
               <Icon name={isListening ? 'stop' : 'microphone'} size={16} color={isListening ? '#fff' : '#5f6368'} />
@@ -1355,6 +1357,18 @@ const AddItemsScreen = () => {
             </View>
           </View>
         </Modal>
+
+        {/* Voice Recognition Modal */}
+        <VoiceRecognitionModal
+          visible={showVoiceModal}
+          onClose={async () => {
+            await voiceService.stopListening();
+            setShowVoiceModal(false);
+            setIsListening(false);
+          }}
+          partialText={voicePartialText}
+          isListening={isListening}
+        />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -1780,7 +1794,7 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: '#4F46E5', // Indigo 600
-    borderRadius: 20,
+    borderRadius: 10,
     width: 52,
     height: 52,
     justifyContent: 'center',

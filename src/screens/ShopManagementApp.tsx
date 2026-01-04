@@ -297,6 +297,18 @@ const ShopManagementApp: React.FC = () => {
     const formatCurrency = (amount: number): string => {
         return amount.toLocaleString('vi-VN') + 'đ';
     };
+    const getGreeting = (date: Date): string => {
+        const hour = date.getHours();
+        if (hour >= 5 && hour < 11) {
+            return 'Chào buổi sáng';
+        } else if (hour >= 11 && hour < 14) {
+            return 'Chào buổi trưa,';
+        } else if (hour >= 14 && hour < 18) {
+            return 'Chào buổi chiều';
+        } else {
+            return 'Chào buổi tối';
+        }
+    };
 
     const formatTime = (date: Date): string => {
         return date.toLocaleTimeString('vi-VN', {
@@ -577,9 +589,7 @@ const ShopManagementApp: React.FC = () => {
                 >
                     {/* Header with Image Background */}
                     <ImageBackground
-                        source={{
-                            uri: 'https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
-                        }}
+                        source={require('../assets/header_bg.jpg')}
                         style={styles.header}
                         imageStyle={styles.headerImage}
                     >
@@ -587,7 +597,7 @@ const ShopManagementApp: React.FC = () => {
                             {/* Welcome Section */}
                             <View style={styles.welcomeSection}>
                                 <View>
-                                    <Text style={styles.greetingText}>Chào buổi chiều,</Text>
+                                    <Text style={styles.greetingText}>{getGreeting(currentTime)}</Text>
                                     <Text style={styles.welcomeText}>Tiến Nguyễn</Text>
                                 </View>
                                 <TouchableOpacity
