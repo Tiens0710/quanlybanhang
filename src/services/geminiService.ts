@@ -4,7 +4,7 @@
  */
 
 // Replace with your actual API key (should be stored securely in production)
-const GEMINI_API_KEY = 'AIzaSyBKxPhwbF-3bvIeRl_rjprKapXMLHFtR6k';
+const GEMINI_API_KEY = '';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // Product categories for the shop
