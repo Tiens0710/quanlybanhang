@@ -10,6 +10,7 @@ import {
   Alert,
   Animated,
   RefreshControl,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -294,7 +295,16 @@ export const InventoryScreen: React.FC = () => {
       <Card style={styles.inventoryCard}>
         <View style={styles.itemHeader}>
           <View style={styles.itemInfo}>
-            <Text style={styles.itemEmoji}>{item.image}</Text>
+            {/* Smart Image Display: URI or Emoji */}
+            {item.image && (item.image.startsWith('file://') || item.image.startsWith('http')) ? (
+              <Image
+                source={{ uri: item.image }}
+                style={styles.productImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.itemEmoji}>{item.image || '📦'}</Text>
+            )}
             <View style={styles.itemDetails}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemSku}>SKU: {item.sku}</Text>
@@ -744,6 +754,13 @@ const styles = StyleSheet.create({
   itemEmoji: {
     fontSize: 36,
     marginRight: 14,
+  },
+  productImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    marginRight: 14,
+    backgroundColor: '#F1F5F9',
   },
   itemDetails: {
     flex: 1,

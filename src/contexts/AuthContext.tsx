@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { sendLoginNotificationEmail } from '../services/emailService';
 
 // Configure Google Sign-In
 // Android OAuth works via SHA-1 fingerprint registered in Google Cloud Console
 GoogleSignin.configure({
-    webClientId: '432943984764-tmahc4jdevnuj0grgv92pg74rjf1hsle.apps.googleusercontent.com',
+    webClientId: '887808117336-7h30t78hfs4tss1517qqfgdd6pel6g58.apps.googleusercontent.com',
     scopes: ['profile', 'email'],
     offlineAccess: true,
 });
@@ -79,6 +80,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 setUser(mockUser);
                 setIsAuthenticated(true);
+
+                // Send login notification email
+                sendLoginNotificationEmail(email, mockUser.name).catch(console.error);
+
                 return true;
             }
             return false;
@@ -111,6 +116,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             setUser(googleUser);
             setIsAuthenticated(true);
+
+            // Send login notification email
+            if (googleUser.email) {
+                sendLoginNotificationEmail(googleUser.email, googleUser.name).catch(console.error);
+            }
+
             return true;
         } catch (error: any) {
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {

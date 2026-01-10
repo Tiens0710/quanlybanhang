@@ -10,8 +10,10 @@ import {
   Alert,
   Animated,
   ScrollView,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Card } from '../components/common';
@@ -123,6 +125,7 @@ export const PurchaseOrderScreen: React.FC = () => {
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductQty, setNewProductQty] = useState('1');
   const [newProductCategory, setNewProductCategory] = useState('');
+  const [newProductImage, setNewProductImage] = useState<string>('');
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [productCategories, setProductCategories] = useState(['Đồ uống', 'Thức ăn', 'Snack', 'Điện tử', 'Gia dụng', 'Mỹ phẩm', 'Thời trang', 'Chưa phân loại']);
   const [suppliers, setSuppliers] = useState<Supplier[]>(sampleSuppliers);
@@ -149,6 +152,42 @@ export const PurchaseOrderScreen: React.FC = () => {
     }
   };
 
+  const pickProductImage = () => {
+    Alert.alert(
+      'Chọn ảnh sản phẩm',
+      'Chọn nguồn ảnh',
+      [
+        {
+          text: 'Thư viện',
+          onPress: () => {
+            launchImageLibrary(
+              { mediaType: 'photo', quality: 0.8 },
+              (response) => {
+                if (response.assets && response.assets[0]?.uri) {
+                  setNewProductImage(response.assets[0].uri);
+                }
+              }
+            );
+          },
+        },
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera(
+              { mediaType: 'photo', quality: 0.8 },
+              (response) => {
+                if (response.assets && response.assets[0]?.uri) {
+                  setNewProductImage(response.assets[0].uri);
+                }
+              }
+            );
+          },
+        },
+        { text: 'Hủy', style: 'cancel' },
+      ]
+    );
+  };
+
   const handleAddProduct = async () => {
     if (!newProductName || !newProductCost) {
       Alert.alert('Lỗi', 'Vui lòng nhập tên và giá nhập');
@@ -162,6 +201,7 @@ export const PurchaseOrderScreen: React.FC = () => {
         cost_price: parseFloat(newProductCost),
         stock: parseInt(newProductQty) || 0,
         category: newProductCategory || 'Chưa phân loại',
+        image: newProductImage || undefined,
       });
 
       // Add to PO items
@@ -182,6 +222,7 @@ export const PurchaseOrderScreen: React.FC = () => {
       setNewProductPrice('');
       setNewProductQty('1');
       setNewProductCategory('');
+      setNewProductImage('');
       setShowAddProductForm(false);
       await loadProducts();
       Alert.alert('Thành công', 'Đã thêm sản phẩm vào đơn!');
@@ -513,6 +554,48 @@ export const PurchaseOrderScreen: React.FC = () => {
                     value={newProductSKU}
                     onChangeText={setNewProductSKU}
                   />
+
+                  {/* Image Picker */}
+                  <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: spacing.xs, color: colors.text }}>Ảnh sản phẩm</Text>
+                  <TouchableOpacity
+                    style={{
+                      borderWidth: 2,
+                      borderColor: colors.cardBorder,
+                      borderStyle: 'dashed',
+                      borderRadius: borderRadius.md,
+                      padding: spacing.lg,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: spacing.md,
+                      backgroundColor: newProductImage ? 'transparent' : colors.backgroundSecondary,
+                      height: 150,
+                    }}
+                    onPress={pickProductImage}
+                  >
+                    {newProductImage ? (
+                      <Image
+                        source={{ uri: newProductImage }}
+                        style={{ width: '100%', height: '100%', borderRadius: borderRadius.sm }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={{ alignItems: 'center' }}>
+                        <Icon name="add-a-photo" size={40} color={colors.textSecondary} />
+                        <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
+                          Nhấn để chọn ảnh
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  {newProductImage && (
+                    <TouchableOpacity
+                      style={{ alignSelf: 'flex-end', marginBottom: spacing.md }}
+                      onPress={() => setNewProductImage('')}
+                    >
+                      <Text style={{ color: colors.danger, fontSize: 13 }}>Xóa ảnh</Text>
+                    </TouchableOpacity>
+                  )}
+
                   <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                     <TextInput
                       style={[styles.input, { flex: 1 }]}

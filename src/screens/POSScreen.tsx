@@ -11,6 +11,7 @@ import {
   StatusBar,
   TextInput,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,6 +41,7 @@ interface Product {
   emoji: string;
   category: string;
   stock: number;
+  image?: string; // Product image URI
 }
 
 interface CartItem extends Product {
@@ -81,6 +83,7 @@ export const POSScreen: React.FC = () => {
         emoji: getEmojiForCategory(p.category || ''),
         category: p.category || 'Chưa phân loại',
         stock: p.stock || 0,
+        image: p.image || undefined,
       }));
       setProducts(mappedProducts);
 
@@ -136,6 +139,7 @@ export const POSScreen: React.FC = () => {
         emoji: getEmojiForCategory(p.category || ''),
         category: p.category || 'Chưa phân loại',
         stock: p.stock || 0,
+        image: p.image || undefined,
       }));
       setProducts(mappedProducts);
     } catch (error) {
@@ -349,7 +353,15 @@ export const POSScreen: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.productImageBox}>
-                  <Text style={styles.emojiText}>{item.emoji}</Text>
+                  {item.image && (item.image.startsWith('file://') || item.image.startsWith('http')) ? (
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.productImageFull}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.emojiText}>📦</Text>
+                  )}
                 </View>
                 <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
                 <Text style={styles.productPrice}>
@@ -663,6 +675,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
+    overflow: 'hidden',
+  },
+  productImageFull: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
   },
   productEmoji: {
     width: 64,

@@ -7,7 +7,8 @@ import {
   Image,
   Text,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  Dimensions
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AuthStackScreenProps } from '../../types/navigation';
@@ -18,6 +19,8 @@ import BiometricPrompt from './BiometricPrompt';
 import BiometricUtils from '../../utils/biometrics';
 
 type Props = AuthStackScreenProps<'Login'>;
+
+const { height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }: Props) => {
   const { loginWithEmail, loginWithGoogle, loginWithBiometric } = useAuth();
@@ -237,6 +240,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 30,
+    marginTop: height * 0.1, // Scale according to screen height
   },
   logoText: {
     fontSize: 20,

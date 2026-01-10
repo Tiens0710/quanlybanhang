@@ -1161,41 +1161,6 @@ const AddItemsScreen = () => {
                   placeholder="Ví dụ: áo sơ mi nam"
                   autoCapitalize="sentences"
                 />
-                {/* AI Classification Button */}
-                <TouchableOpacity
-                  style={[styles.aiClassifyButton, isClassifying && styles.aiClassifyButtonDisabled]}
-                  onPress={handleAIClassify}
-                  disabled={isClassifying || !newProductName.trim()}
-                >
-                  {isClassifying ? (
-                    <ActivityIndicator size="small" color="#6366F1" />
-                  ) : (
-                    <Icon name="auto-fix" size={18} color="#6366F1" />
-                  )}
-                  <Text style={styles.aiClassifyButtonText}>
-                    {isClassifying ? 'Đang phân loại...' : 'Phân loại bằng AI'}
-                  </Text>
-                </TouchableOpacity>
-                {/* AI Classification Result */}
-                {aiCategory && (
-                  <View style={styles.aiResultContainer}>
-                    <View style={styles.aiResultHeader}>
-                      <Icon name="check-circle" size={16} color="#10B981" />
-                      <Text style={styles.aiResultTitle}>Gợi ý từ AI</Text>
-                    </View>
-                    <Text style={styles.aiResultCategory}>
-                      Danh mục: <Text style={styles.aiResultValue}>{aiCategory.category}</Text>
-                    </Text>
-                    {aiCategory.subcategory && (
-                      <Text style={styles.aiResultCategory}>
-                        Danh mục phụ: <Text style={styles.aiResultValue}>{aiCategory.subcategory}</Text>
-                      </Text>
-                    )}
-                    <Text style={styles.aiResultConfidence}>
-                      Độ tin cậy: {aiCategory.confidence}
-                    </Text>
-                  </View>
-                )}
               </View>
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Giá (VND) *</Text>
