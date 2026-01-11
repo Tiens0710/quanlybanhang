@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -33,6 +33,32 @@ const LoginScreen = ({ navigation }: Props) => {
   const [currentBiometricType, setCurrentBiometricType] = useState<'fingerprint' | 'face' | 'voice'>('fingerprint');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
+  // Biometric availability states
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [availableBiometricType, setAvailableBiometricType] = useState<'fingerprint' | 'face' | 'none'>('none');
+  const [checkingBiometrics, setCheckingBiometrics] = useState(true);
+
+  // Check biometric availability on mount
+  useEffect(() => {
+    const checkBiometricAvailability = async () => {
+      try {
+        const isAvailable = await BiometricUtils.isBiometricAvailable();
+        const biometricType = await BiometricUtils.getBiometricType();
+
+        setIsBiometricAvailable(isAvailable);
+        setAvailableBiometricType(biometricType);
+      } catch (error) {
+        console.error('Error checking biometrics:', error);
+        setIsBiometricAvailable(false);
+        setAvailableBiometricType('none');
+      } finally {
+        setCheckingBiometrics(false);
+      }
+    };
+
+    checkBiometricAvailability();
+  }, []);
+
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -58,11 +84,23 @@ const LoginScreen = ({ navigation }: Props) => {
   };
 
   const handleBiometricAuth = async (type: 'fingerprint' | 'face' | 'voice') => {
+    // Kiểm tra thiết bị có hỗ trợ sinh trắc học không
+    const isAvailable = await BiometricUtils.isBiometricAvailable();
+    if (!isAvailable) {
+      Alert.alert(
+        'Không khả dụng',
+        'Thiết bị của bạn không hỗ trợ xác thực sinh trắc học hoặc chưa đăng ký vân tay/khuôn mặt. Vui lòng kiểm tra cài đặt bảo mật của thiết bị.'
+      );
+      return;
+    }
+
     setCurrentBiometricType(type);
     setShowBiometricPrompt(true);
 
     try {
       const biometricSuccess = await BiometricUtils.authenticateWithBiometric(type);
+      setShowBiometricPrompt(false);
+
       if (biometricSuccess) {
         // Thêm xác thực với AuthContext sau khi sinh trắc học thành công
         const loginSuccess = await loginWithBiometric();
@@ -70,13 +108,12 @@ const LoginScreen = ({ navigation }: Props) => {
           Alert.alert('Lỗi', 'Không thể đăng nhập sau khi xác thực sinh trắc học');
         }
       } else {
-        Alert.alert('Thất bại', 'Xác thực không thành công');
+        Alert.alert('Thất bại', 'Xác thực không thành công hoặc bị hủy');
       }
     } catch (error) {
       console.error('Biometric auth error:', error);
-      Alert.alert('Lỗi', `Không thể xác thực bằng ${type}`);
-    } finally {
       setShowBiometricPrompt(false);
+      Alert.alert('Lỗi', `Không thể xác thực bằng ${type === 'fingerprint' ? 'vân tay' : 'khuôn mặt'}`);
     }
   };
 
@@ -207,6 +244,7 @@ const LoginScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
       </View>
 
+      {/* Biometric Authentication - Always show buttons */}
       <View style={styles.biometricContainer}>
         <BiometricButton
           type="fingerprint"
@@ -233,6 +271,7 @@ const LoginScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
+    paddingTop: -5,
     backgroundColor: '#fff',
     padding: 20,
     alignItems: 'center',

@@ -3,299 +3,252 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   Alert,
   ScrollView,
-  Image,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card } from '../../components/common';
-import { Button } from '../../components/common';
-import { colors, typography, spacing, borderRadius } from '../../constants/theme';
-import { detectCarrier, CarrierInfo } from '../../utils/phoneCarrierUtils';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import CustomInput from '../../components/auth/CustomInput';
+
+const { height } = Dimensions.get('window');
 
 export const RegisterScreen: React.FC = ({ navigation }: any) => {
   const [formData, setFormData] = useState({
-    storeName: '',
-    ownerName: '',
+    username: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [detectedCarrier, setDetectedCarrier] = useState<CarrierInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string | undefined }>({});
 
-  // Detect carrier when phone number changes
-  React.useEffect(() => {
-    const carrier = detectCarrier(formData.phone);
-    setDetectedCarrier(carrier);
-  }, [formData.phone]);
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
-  const handleRegister = () => {
-    if (!formData.storeName || !formData.ownerName || !formData.email || !formData.password) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+  const validateForm = () => {
+    const newErrors: { [key: string]: string | undefined } = {};
+
+    if (!formData.username) {
+      newErrors.username = 'Vui lòng nhập tên đăng nhập';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Tên đăng nhập phải có ít nhất 3 ký tự';
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'Vui lòng nhập email';
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Email không hợp lệ';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Vui lòng nhập mật khẩu';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRegister = async () => {
+    if (!validateForm()) {
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
-      return;
-    }
+    setIsLoading(true);
+    try {
+      // Simulate registration
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    Alert.alert('Đăng ký thành công', 'Tài khoản đã được tạo thành công!', [
-      { text: 'Đăng nhập', onPress: () => navigation.navigate('Login') }
-    ]);
+      Alert.alert('Đăng ký thành công', 'Tài khoản đã được tạo thành công!', [
+        { text: 'Đăng nhập', onPress: () => navigation.navigate('Login') }
+      ]);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Đã có lỗi xảy ra khi đăng ký');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Tạo tài khoản</Text>
-          <Text style={styles.subtitle}>Đăng ký để bắt đầu quản lý cửa hàng</Text>
-        </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Header with back button */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
 
-        <Card style={styles.registerCard}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Tên cửa hàng *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập tên cửa hàng"
-              value={formData.storeName}
-              onChangeText={(text) => updateFormData('storeName', text)}
-            />
-          </View>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Icon name="store" size={80} color="#0088CC" />
+      </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Tên chủ cửa hàng *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập tên chủ cửa hàng"
-              value={formData.ownerName}
-              onChangeText={(text) => updateFormData('ownerName', text)}
-            />
-          </View>
+      <Text style={styles.title}>Tạo tài khoản mới</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập email"
-              value={formData.email}
-              onChangeText={(text) => updateFormData('email', text)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+      <View style={styles.inputContainer}>
+        <CustomInput
+          value={formData.username}
+          onChangeText={(text) => updateFormData('username', text)}
+          placeholder="Tên đăng nhập"
+          error={errors.username}
+        />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Số điện thoại</Text>
-            <View style={styles.phoneInputContainer}>
-              <TextInput
-                style={[styles.input, detectedCarrier && styles.phoneInputWithCarrier]}
-                placeholder="Nhập số điện thoại"
-                value={formData.phone}
-                onChangeText={(text) => updateFormData('phone', text)}
-                keyboardType="phone-pad"
-              />
-              {detectedCarrier && (
-                <View style={[styles.carrierBadge, { backgroundColor: detectedCarrier.color + '15' }]}>
-                  {detectedCarrier.logoPath ? (
-                    <Image
-                      source={detectedCarrier.logoPath}
-                      style={styles.carrierLogo}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <Text style={styles.carrierIcon}>{detectedCarrier.icon}</Text>
-                  )}
-                </View>
-              )}
-            </View>
-          </View>
+        <CustomInput
+          value={formData.email}
+          onChangeText={(text) => updateFormData('email', text)}
+          placeholder="Email"
+          keyboardType="email-address"
+          error={errors.email}
+        />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Mật khẩu *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Nhập mật khẩu"
-                value={formData.password}
-                onChangeText={(text) => updateFormData('password', text)}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Icon
-                  name={showPassword ? 'visibility-off' : 'visibility'}
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Xác nhận mật khẩu *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Nhập lại mật khẩu"
-                value={formData.confirmPassword}
-                onChangeText={(text) => updateFormData('confirmPassword', text)}
-                secureTextEntry={!showConfirmPassword}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                <Icon
-                  name={showConfirmPassword ? 'visibility-off' : 'visibility'}
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Button
-            title="Đăng ký"
-            onPress={handleRegister}
-            style={styles.registerButton}
+        <View style={styles.passwordWrapper}>
+          <CustomInput
+            value={formData.password}
+            onChangeText={(text) => updateFormData('password', text)}
+            placeholder="Mật khẩu"
+            secureTextEntry={!showPassword}
+            error={errors.password}
           />
-        </Card>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Đã có tài khoản? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.loginText}>Đăng nhập ngay</Text>
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Icon
+              name={showPassword ? "eye-off" : "eye"}
+              size={24}
+              color="#666"
+            />
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        <View style={styles.passwordWrapper}>
+          <CustomInput
+            value={formData.confirmPassword}
+            onChangeText={(text) => updateFormData('confirmPassword', text)}
+            placeholder="Xác nhận mật khẩu"
+            secureTextEntry={!showConfirmPassword}
+            error={errors.confirmPassword}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Icon
+              name={showConfirmPassword ? "eye-off" : "eye"}
+              size={24}
+              color="#666"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+          onPress={handleRegister}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.registerButtonText}>Đăng ký</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.loginContainer}
+          onPress={() => navigation.navigate('Login')}
+        >
+          <Text style={styles.loginText}>
+            Đã có tài khoản?
+            <Text style={styles.loginLink}> Đăng nhập ngay</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.background,
+    flexGrow: 1,
+    backgroundColor: '#fff',
+    padding: 20,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.xl,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   backButton: {
-    alignSelf: 'flex-start',
-    padding: spacing.sm,
-    marginBottom: spacing.md,
+    padding: 8,
+    marginLeft: -8,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+    marginTop: height * 0.05,
   },
   title: {
-    ...typography.h1,
-    color: colors.text,
-    marginBottom: spacing.sm,
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 30,
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
+  inputContainer: {
+    width: '100%',
   },
-  registerCard: {
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-  },
-  inputGroup: {
-    marginBottom: spacing.lg,
-  },
-  inputLabel: {
-    ...typography.small,
-    color: colors.text,
-    fontWeight: '500',
-    marginBottom: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: borderRadius.sm,
-    padding: spacing.md,
-    backgroundColor: colors.backgroundSecondary,
-    ...typography.body,
-    color: colors.text,
-  },
-  passwordContainer: {
+  passwordWrapper: {
     position: 'relative',
+    marginBottom: 15,
   },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  eyeButton: {
+  eyeIcon: {
     position: 'absolute',
-    right: spacing.md,
-    top: spacing.md,
-    padding: spacing.sm,
+    right: 12,
+    top: 12,
   },
   registerButton: {
-    marginTop: spacing.md,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    backgroundColor: '#0088CC',
+    padding: 15,
+    borderRadius: 5,
     alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 10,
   },
-  footerText: {
-    ...typography.body,
-    color: colors.textSecondary,
+  registerButtonDisabled: {
+    backgroundColor: '#66b3d9',
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  loginContainer: {
+    alignItems: 'center',
   },
   loginText: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '600',
+    color: '#666',
   },
-  // Carrier logo styles
-  phoneInputContainer: {
-    position: 'relative',
-  },
-  phoneInputWithCarrier: {
-    paddingLeft: 50,
-  },
-  carrierBadge: {
-    position: 'absolute',
-    left: 8,
-    top: 8,
-    bottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
-    minWidth: 32,
-  },
-  carrierLogo: {
-    width: 20,
-    height: 20,
-  },
-  carrierIcon: {
-    fontSize: 16,
+  loginLink: {
+    color: '#0088CC',
   },
 });

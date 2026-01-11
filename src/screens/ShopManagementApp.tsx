@@ -18,6 +18,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -64,6 +65,11 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 const ShopManagementApp: React.FC = () => {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
+    const { user } = useAuth();
+
+    // Lấy tên hiển thị từ user
+    const displayName = user?.name || user?.email?.split('@')[0] || 'Bạn';
+
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
     const [todayRevenue, setTodayRevenue] = useState<number>(15750000);
     const [todayOrders, setTodayOrders] = useState<number>(47);
@@ -598,7 +604,7 @@ const ShopManagementApp: React.FC = () => {
                             <View style={styles.welcomeSection}>
                                 <View>
                                     <Text style={styles.greetingText}>{getGreeting(currentTime)}</Text>
-                                    <Text style={styles.welcomeText}>Tiến Nguyễn</Text>
+                                    <Text style={styles.welcomeText}>{displayName}</Text>
                                 </View>
                                 <TouchableOpacity
                                     style={styles.avatarButton}
