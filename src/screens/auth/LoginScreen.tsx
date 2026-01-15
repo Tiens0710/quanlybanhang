@@ -14,8 +14,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AuthStackScreenProps } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import CustomInput from '../../components/auth/CustomInput';
-import BiometricButton from '../../components/auth/BiometricButton';
-import BiometricPrompt from './BiometricPrompt';
 import BiometricUtils from '../../utils/biometrics';
 
 type Props = AuthStackScreenProps<'Login'>;
@@ -23,14 +21,13 @@ type Props = AuthStackScreenProps<'Login'>;
 const { height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }: Props) => {
-  const { loginWithEmail, loginWithGoogle, loginWithBiometric } = useAuth();
+  const { loginWithEmail, loginWithGoogle, loginWithBiometric, hasBiometricCredentials } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
-  const [currentBiometricType, setCurrentBiometricType] = useState<'fingerprint' | 'face' | 'voice'>('fingerprint');
+
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   // Biometric availability states
@@ -84,6 +81,16 @@ const LoginScreen = ({ navigation }: Props) => {
   };
 
   const handleBiometricAuth = async (type: 'fingerprint' | 'face' | 'voice') => {
+    // Kiểm tra có tài khoản đã lưu cho vân tay không
+    const hasCredentials = await hasBiometricCredentials();
+    if (!hasCredentials) {
+      Alert.alert(
+        'Chưa có tài khoản',
+        'Vui lòng đăng nhập bằng email/mật khẩu trước để sử dụng vân tay cho lần đăng nhập sau.'
+      );
+      return;
+    }
+
     // Kiểm tra thiết bị có hỗ trợ sinh trắc học không
     const isAvailable = await BiometricUtils.isBiometricAvailable();
     if (!isAvailable) {
@@ -94,25 +101,20 @@ const LoginScreen = ({ navigation }: Props) => {
       return;
     }
 
-    setCurrentBiometricType(type);
-    setShowBiometricPrompt(true);
-
     try {
       const biometricSuccess = await BiometricUtils.authenticateWithBiometric(type);
-      setShowBiometricPrompt(false);
 
       if (biometricSuccess) {
-        // Thêm xác thực với AuthContext sau khi sinh trắc học thành công
+        // Đăng nhập với tài khoản đã lưu
         const loginSuccess = await loginWithBiometric();
         if (!loginSuccess) {
-          Alert.alert('Lỗi', 'Không thể đăng nhập sau khi xác thực sinh trắc học');
+          Alert.alert('Lỗi', 'Không thể đăng nhập. Vui lòng thử lại bằng email/mật khẩu.');
         }
       } else {
         Alert.alert('Thất bại', 'Xác thực không thành công hoặc bị hủy');
       }
     } catch (error) {
       console.error('Biometric auth error:', error);
-      setShowBiometricPrompt(false);
       Alert.alert('Lỗi', `Không thể xác thực bằng ${type === 'fingerprint' ? 'vân tay' : 'khuôn mặt'}`);
     }
   };
@@ -211,17 +213,27 @@ const LoginScreen = ({ navigation }: Props) => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.loginButtonText}>Đăng nhập</Text>
-          )}
-        </TouchableOpacity>
+        {/* Login Button with Fingerprint */}
+        <View style={styles.loginButtonRow}>
+          <TouchableOpacity
+            style={[styles.loginButton, styles.loginButtonFlex, isLoading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Đăng nhập</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.fingerprintButton}
+            onPress={() => handleBiometricAuth('fingerprint')}
+          >
+            <Icon name="fingerprint" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
         {/* Google Login Button */}
         <TouchableOpacity
@@ -243,27 +255,6 @@ const LoginScreen = ({ navigation }: Props) => {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Biometric Authentication - Always show buttons */}
-      <View style={styles.biometricContainer}>
-        <BiometricButton
-          type="fingerprint"
-          label="Vân tay"
-          onPress={() => handleBiometricAuth('fingerprint')}
-        />
-        <BiometricButton
-          type="face"
-          label="Khuôn mặt"
-          onPress={() => handleBiometricAuth('face')}
-        />
-      </View>
-
-      <BiometricPrompt
-        visible={showBiometricPrompt}
-        type={currentBiometricType}
-        onCancel={() => setShowBiometricPrompt(false)}
-        message={`Vui lòng xác thực bằng ${currentBiometricType === 'fingerprint' ? 'vân tay' : 'khuôn mặt'}`}
-      />
     </ScrollView>
   );
 };
@@ -293,13 +284,22 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 20,
   },
-  biometricContainer: {
-    marginTop: 50,
+  loginButtonRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 10,
+  },
+  loginButtonFlex: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  fingerprintButton: {
+    backgroundColor: '#0088CC',
+    padding: 13,
+    borderRadius: 5,
+    alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    marginBottom: 30,
-    gap: 40,
   },
   dividerText: {
     color: '#666',

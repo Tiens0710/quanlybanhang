@@ -599,7 +599,7 @@ const ShopManagementApp: React.FC = () => {
                         style={styles.header}
                         imageStyle={styles.headerImage}
                     >
-                        <View style={styles.headerOverlay}>
+                        <View style={[styles.headerOverlay, { paddingTop: insets.top + 16 }]}>
                             {/* Welcome Section */}
                             <View style={styles.welcomeSection}>
                                 <View>
@@ -846,7 +846,6 @@ const styles = StyleSheet.create({
     header: {
         width: '100%',
         paddingHorizontal: 16,
-        paddingTop: 40,
         paddingBottom: 120,
         overflow: 'hidden',
         minHeight: 250,
@@ -856,10 +855,10 @@ const styles = StyleSheet.create({
     headerOverlay: {
         backgroundColor: 'rgba(15, 23, 42, 0.7)',
         paddingHorizontal: 16,
-        paddingTop: 50,
+        paddingTop: 16,
         paddingBottom: 200,
         marginHorizontal: -16,
-        marginTop: -40,
+        marginTop: 0,
         marginBottom: -180,
     },
     revenueCardContainer: {

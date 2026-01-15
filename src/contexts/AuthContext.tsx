@@ -25,6 +25,7 @@ interface AuthContextType {
     loginWithEmail: (email: string, password: string) => Promise<boolean>;
     loginWithGoogle: () => Promise<boolean>;
     loginWithBiometric: () => Promise<boolean>;
+    hasBiometricCredentials: () => Promise<boolean>;
     logout: () => Promise<void>;
     register: (email: string, password: string, name: string) => Promise<boolean>;
 }
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_TOKEN_KEY = '@auth_token';
 const USER_DATA_KEY = '@user_data';
+const BIOMETRIC_CREDENTIALS_KEY = '@biometric_credentials';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -77,6 +79,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 await AsyncStorage.setItem(AUTH_TOKEN_KEY, 'mock_token_' + Date.now());
                 await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(mockUser));
+
+                // Lưu credentials cho đăng nhập vân tay
+                await AsyncStorage.setItem(BIOMETRIC_CREDENTIALS_KEY, JSON.stringify(mockUser));
 
                 setUser(mockUser);
                 setIsAuthenticated(true);
@@ -137,31 +142,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    const hasBiometricCredentials = async (): Promise<boolean> => {
+        try {
+            const credentials = await AsyncStorage.getItem(BIOMETRIC_CREDENTIALS_KEY);
+            return credentials !== null;
+        } catch (error) {
+            console.error('Error checking biometric credentials:', error);
+            return false;
+        }
+    };
+
     const loginWithBiometric = async (): Promise<boolean> => {
         try {
-            // Biometric authentication is already verified before calling this
-            // Just restore the saved session or create a new one
-            const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+            // Kiểm tra có credentials đã lưu không
+            const credentialsStr = await AsyncStorage.getItem(BIOMETRIC_CREDENTIALS_KEY);
 
-            if (userData) {
-                setUser(JSON.parse(userData));
-                setIsAuthenticated(true);
-                return true;
-            } else {
-                // Create a new session for biometric login
-                const mockUser: User = {
-                    id: '1',
-                    email: 'biometric@user.com',
-                    name: 'Biometric User',
-                };
-
-                await AsyncStorage.setItem(AUTH_TOKEN_KEY, 'biometric_token_' + Date.now());
-                await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(mockUser));
-
-                setUser(mockUser);
-                setIsAuthenticated(true);
-                return true;
+            if (!credentialsStr) {
+                // Không có tài khoản lưu cho vân tay
+                console.log('[AuthContext] No biometric credentials found');
+                return false;
             }
+
+            const savedUser = JSON.parse(credentialsStr) as User;
+
+            // Đăng nhập với tài khoản đã lưu
+            await AsyncStorage.setItem(AUTH_TOKEN_KEY, 'biometric_token_' + Date.now());
+            await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(savedUser));
+
+            setUser(savedUser);
+            setIsAuthenticated(true);
+
+            console.log('[AuthContext] Biometric login successful for:', savedUser.email);
+            return true;
         } catch (error) {
             console.error('Biometric login error:', error);
             return false;
@@ -209,6 +221,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 loginWithEmail,
                 loginWithGoogle,
                 loginWithBiometric,
+                hasBiometricCredentials,
                 logout,
                 register,
             }}
