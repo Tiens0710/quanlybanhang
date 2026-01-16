@@ -27,6 +27,9 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 // Import Auth Context
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
+// Import Theme Context
+import { ThemeProvider } from './src/contexts/ThemeContext';
+
 // Import theme
 import { colors, typography, spacing, borderRadius } from './src/constants/theme';
 import type { RootStackParamList } from './src/types/navigation';
@@ -273,15 +276,17 @@ const RootNavigator = () => {
 const App = () => {
   return (
     <SafeAreaProvider>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-      />
-      <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+      <ThemeProvider>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+        />
+        <AuthProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 };

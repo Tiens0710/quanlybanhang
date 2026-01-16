@@ -10,6 +10,7 @@ import {
   Alert,
   Animated,
   Image,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ import { Card } from '../components/common';
 import { Button } from '../components/common';
 import { SearchBar } from '../components/common/SearchBar';
 import { colors, typography, spacing, borderRadius, shadows } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface Customer {
   id: string;
@@ -93,6 +95,7 @@ const samplePurchases: Purchase[] = [
 
 export const CustomersScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { isDarkMode, colors: themeColors } = useTheme();
   const [searchText, setSearchText] = useState('');
   const [selectedSegment, setSelectedSegment] = useState('Tất cả');
   const [customers, setCustomers] = useState<Customer[]>(sampleCustomers);
@@ -171,71 +174,70 @@ export const CustomersScreen: React.FC = () => {
   };
 
   const renderStatsCard = (title: string, value: string | number, icon: string, color: string) => (
-    <Card style={styles.statsCard} shadowLevel="small">
+    <View style={[styles.statsCard, { backgroundColor: themeColors.surface }]}>
       <View style={[styles.statsIcon, { backgroundColor: color + '20' }]}>
         <Icon name={icon} size={20} color={color} />
       </View>
       <View style={styles.statsContent}>
-        <Text style={styles.statsValue}>{value}</Text>
-        <Text style={styles.statsTitle}>{title}</Text>
+        <Text style={[styles.statsValue, { color: themeColors.text }]}>{value}</Text>
+        <Text style={[styles.statsTitle, { color: themeColors.textSecondary }]}>{title}</Text>
       </View>
-    </Card>
+    </View>
   );
 
   const renderCustomerItem = ({ item }: { item: Customer }) => (
     <TouchableOpacity onPress={() => handleCustomerPress(item)}>
-      <Card style={styles.customerCard} shadowLevel="small">
+      <View style={[styles.customerCard, { backgroundColor: themeColors.surface }]}>
         <View style={styles.customerHeader}>
           <View style={styles.customerInfo}>
             <Text style={styles.customerAvatar}>{item.avatar}</Text>
             <View style={styles.customerDetails}>
               <View style={styles.customerNameRow}>
-                <Text style={styles.customerName}>{item.name}</Text>
+                <Text style={[styles.customerName, { color: themeColors.text }]}>{item.name}</Text>
                 <View style={[styles.segmentBadge, { backgroundColor: getSegmentColor(item.segment) }]}>
                   <Text style={styles.segmentText}>{getSegmentLabel(item.segment)}</Text>
                 </View>
               </View>
-              <Text style={styles.customerContact}>{item.phone}</Text>
-              <Text style={styles.customerEmail}>{item.email}</Text>
+              <Text style={[styles.customerContact, { color: themeColors.textSecondary }]}>{item.phone}</Text>
+              <Text style={[styles.customerEmail, { color: themeColors.textMuted }]}>{item.email}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.moreButton}>
-            <Icon name="more-vert" size={20} color={colors.textSecondary} />
+            <Icon name="more-vert" size={20} color={themeColors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.customerStats}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Tổng chi tiêu</Text>
-            <Text style={styles.statValue}>{item.totalSpent.toLocaleString('vi-VN')}đ</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Tổng chi tiêu</Text>
+            <Text style={[styles.statValue, { color: themeColors.text }]}>{item.totalSpent.toLocaleString('vi-VN')}đ</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Đơn hàng</Text>
-            <Text style={styles.statValue}>{item.totalOrders}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Đơn hàng</Text>
+            <Text style={[styles.statValue, { color: themeColors.text }]}>{item.totalOrders}</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Điểm tích lũy</Text>
-            <Text style={styles.statValue}>{item.loyaltyPoints}</Text>
+            <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Điểm tích lũy</Text>
+            <Text style={[styles.statValue, { color: themeColors.text }]}>{item.loyaltyPoints}</Text>
           </View>
         </View>
 
-        <Text style={styles.lastPurchase}>
+        <Text style={[styles.lastPurchase, { color: themeColors.textMuted }]}>
           Mua gần nhất: {new Date(item.lastPurchase).toLocaleDateString('vi-VN')}
         </Text>
-      </Card>
+      </View>
     </TouchableOpacity>
   );
-
   const renderPurchaseItem = ({ item }: { item: Purchase }) => (
     <View style={styles.purchaseItem}>
       <View style={styles.purchaseInfo}>
-        <Text style={styles.purchaseDate}>
+        <Text style={[styles.purchaseDate, { color: themeColors.text }]}>
           {new Date(item.date).toLocaleDateString('vi-VN')}
         </Text>
-        <Text style={styles.purchaseItems}>{item.items} sản phẩm</Text>
+        <Text style={[styles.purchaseItems, { color: themeColors.textSecondary }]}>{item.items} sản phẩm</Text>
       </View>
       <View style={styles.purchaseAmount}>
-        <Text style={styles.purchasePrice}>{item.amount.toLocaleString('vi-VN')}đ</Text>
+        <Text style={[styles.purchasePrice, { color: themeColors.primary }]}>{item.amount.toLocaleString('vi-VN')}đ</Text>
         <View style={[styles.statusBadge, { backgroundColor: colors.success + '20' }]}>
           <Text style={[styles.statusText, { color: colors.success }]}>Hoàn thành</Text>
         </View>
@@ -244,29 +246,26 @@ export const CustomersScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={themeColors.background}
+      />
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: themeColors.background, borderBottomColor: themeColors.border }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Icon name="arrow-back" size={24} color={colors.text} />
+            <Icon name="arrow-back" size={24} color={themeColors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Khách hàng</Text>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Khách hàng</Text>
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, { backgroundColor: themeColors.primary }]}
             onPress={() => setShowAddCustomer(true)}
           >
-            <Icon name="person-add" size={24} color={colors.background} />
+            <Icon name="person-add" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          {renderStatsCard('Tổng khách hàng', getTotalCustomers(), 'people', colors.primary)}
-          {renderStatsCard('Khách VIP', getVIPCustomers(), 'star', colors.warning)}
-          {renderStatsCard('Khách mới', getNewCustomers(), 'person-add', colors.success)}
-          {renderStatsCard('Chi tiêu TB', getAverageSpent().toLocaleString('vi-VN') + 'đ', 'attach-money', colors.secondary)}
-        </View>
 
         {/* Search */}
         <SearchBar

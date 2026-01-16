@@ -628,16 +628,38 @@ const AddItemsScreen = () => {
 
   const findProduct = (text: string): Product | null => {
     const normalizedText = normalizeText(text);
+
+    // First: Try EXACT match (highest priority)
     for (const product of productList) {
       const normalizedProductName = normalizeText(product.name);
       const allNames = [normalizedProductName, ...product.aliases.map(alias => normalizeText(alias))];
       for (const name of allNames) {
-        if (normalizedText.includes(name)) {
-          return product;
+        if (normalizedText === name) {
+          return product; // Exact match - return immediately
         }
       }
     }
-    return null;
+
+    // Second: Try partial match - prefer LONGER matches (more specific)
+    let bestMatch: Product | null = null;
+    let bestMatchLength = 0;
+
+    for (const product of productList) {
+      const normalizedProductName = normalizeText(product.name);
+      const allNames = [normalizedProductName, ...product.aliases.map(alias => normalizeText(alias))];
+      for (const name of allNames) {
+        // Check if names match (input contains product name OR product name contains input)
+        if (normalizedText.includes(name) || name.includes(normalizedText)) {
+          // Prefer the LONGER (more specific) product name
+          if (name.length > bestMatchLength) {
+            bestMatchLength = name.length;
+            bestMatch = product;
+          }
+        }
+      }
+    }
+
+    return bestMatch;
   };
 
   // Multi-format parsing: supports various quantity formats
