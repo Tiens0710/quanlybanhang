@@ -27,6 +27,7 @@ import { getProducts as loadProductsFromDB, createProduct as createProductInDB, 
 import { createInvoice, Invoice, InvoiceItem as DBInvoiceItem } from '../services/invoiceService';
 import voiceService from '../services/voiceService';
 import VoiceRecognitionModal from '../components/VoiceRecognitionModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Navigation type
 type AddItemsNavigationProp = StackNavigationProp<RootStackParamList, 'AddItemsScreen'>;
@@ -95,6 +96,11 @@ const AddItemsScreen = () => {
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [customerAddress, setCustomerAddress] = useState<string>('');
   const [detectedCarrier, setDetectedCarrier] = useState<CarrierInfo | null>(null);
+
+  // Recommendation system state
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [frequentProducts, setFrequentProducts] = useState<Product[]>([]);
+  const [recentProducts, setRecentProducts] = useState<string[]>([]);
 
   // Default products
   const defaultProducts: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>[] = [
@@ -431,8 +437,11 @@ const AddItemsScreen = () => {
         setTotalPrice(prev => prev + itemTotal);
       }
 
+      // Track product usage for recommendations
+      trackProductUsage(product.name);
+
       setInputText(''); // Clear input
-      setAiSuggestions([]); // Clear suggestions
+      setShowSuggestions(false); // Hide suggestions
     } else {
       // Not in database - open quick add modal
       quickAddProduct(suggestionName);
@@ -483,11 +492,13 @@ const AddItemsScreen = () => {
         };
         setResults(prev => [...prev, newItem]);
         setTotalPrice(prev => prev + itemTotal);
-        setTotalPrice(prev => prev + itemTotal);
       }
 
+      // Track product usage for recommendations
+      trackProductUsage(product.name);
+
       setInputText(''); // Clear input after adding
-      setAiSuggestions([]); // Clear suggestions
+      setShowSuggestions(false); // Hide suggestions
     } else {
       // Not in database - open quick add modal
       quickAddProduct(productName);
@@ -854,21 +865,137 @@ const AddItemsScreen = () => {
     );
   };
 
-  // Lọc sản phẩm khớp với inputText để hiển thị gợi ý
-  const getMatchingProducts = () => {
+  // Enhanced getMatchingProducts with scoring algorithm
+  const getMatchingProducts = (): Product[] => {
     if (!inputText.trim()) return [];
-    const normalizedInput = normalizeText(inputText);
-    return productList.filter(product => {
+
+    // Parse input to extract product name (remove quantity if present)
+    const { name: searchName } = parseProductLine(inputText.trim());
+    const searchTerm = normalizeText(searchName);
+
+    if (!searchTerm) return [];
+
+    const scored = productList.map(product => {
+      let score = 0;
       const normalizedName = normalizeText(product.name);
-      if (normalizedName.includes(normalizedInput)) return true;
-      return product.aliases.some(alias => normalizeText(alias).includes(normalizedInput));
-    }).slice(0, 5); // Giới hạn 5 gợi ý
+
+      // Exact match = highest score (100)
+      if (normalizedName === searchTerm) {
+        score = 100;
+      }
+      // Starts with = high score (80)
+      else if (normalizedName.startsWith(searchTerm)) {
+        score = 80;
+      }
+      // Contains = medium score (60)
+      else if (normalizedName.includes(searchTerm)) {
+        score = 60;
+      }
+      // Alias exact match (50)
+      else if (product.aliases.some(a => normalizeText(a) === searchTerm)) {
+        score = 50;
+      }
+      // Alias contains match (40)
+      else if (product.aliases.some(a => normalizeText(a).includes(searchTerm))) {
+        score = 40;
+      }
+      // Search term contains product name (30) - for longer searches
+      else if (searchTerm.includes(normalizedName)) {
+        score = 30;
+      }
+      // Fuzzy match with low distance (20)
+      else {
+        const dist = levenshteinDistance(normalizedName, searchTerm);
+        if (dist <= 2) score = 20;
+        else if (dist <= 3) score = 10;
+      }
+
+      return { product, score };
+    })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(item => item.product);
+
+    return scored;
+  };
+
+  // Storage keys for recommendation system
+  const FREQUENCY_KEY = '@product_frequency';
+  const RECENT_KEY = '@recent_products';
+
+  // Track product usage for frequency-based recommendations
+  const trackProductUsage = async (productName: string) => {
+    try {
+      // Update frequency
+      const freqData = await AsyncStorage.getItem(FREQUENCY_KEY);
+      const freq: Record<string, number> = freqData ? JSON.parse(freqData) : {};
+      freq[productName] = (freq[productName] || 0) + 1;
+      await AsyncStorage.setItem(FREQUENCY_KEY, JSON.stringify(freq));
+
+      // Update recent products (keep last 10)
+      const recentData = await AsyncStorage.getItem(RECENT_KEY);
+      let recent: string[] = recentData ? JSON.parse(recentData) : [];
+      recent = recent.filter(name => name !== productName); // Remove if exists
+      recent.unshift(productName); // Add to front
+      recent = recent.slice(0, 10); // Keep only 10
+      await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+      setRecentProducts(recent);
+
+      // Reload frequent products
+      loadFrequentProducts();
+    } catch (error) {
+      console.error('Error tracking product usage:', error);
+    }
+  };
+
+  // Load frequently bought products
+  const loadFrequentProducts = async () => {
+    try {
+      const freqData = await AsyncStorage.getItem(FREQUENCY_KEY);
+      if (freqData && productList.length > 0) {
+        const freq: Record<string, number> = JSON.parse(freqData);
+        const sorted = Object.entries(freq)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name]) => productList.find(p => p.name === name))
+          .filter((p): p is Product => p !== undefined);
+        setFrequentProducts(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading frequent products:', error);
+    }
+  };
+
+  // Load recent products
+  const loadRecentProducts = async () => {
+    try {
+      const recentData = await AsyncStorage.getItem(RECENT_KEY);
+      if (recentData) {
+        setRecentProducts(JSON.parse(recentData));
+      }
+    } catch (error) {
+      console.error('Error loading recent products:', error);
+    }
   };
 
   // Load products on mount
   useEffect(() => {
     loadProducts();
   }, []);
+
+  // Load recommendations after products are loaded
+  useEffect(() => {
+    if (productList.length > 0) {
+      loadFrequentProducts();
+      loadRecentProducts();
+    }
+  }, [productList]);
+
+  // Show/hide suggestions based on input
+  useEffect(() => {
+    setShowSuggestions(inputText.trim().length > 0);
+  }, [inputText]);
 
   // Detect carrier when phone number changes
   useEffect(() => {
@@ -1065,17 +1192,27 @@ const AddItemsScreen = () => {
         </ScrollView>
 
         <View style={styles.chatInputContainer}>
-          {/* Suggestions above input */}
-          {inputText.trim() && getMatchingProducts().length > 0 && (
-            <FlatList
-              data={getMatchingProducts()}
-              renderItem={renderSuggestionItem}
-              keyExtractor={item => item.id.toString()}
-              style={styles.suggestionList}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            />
+          {/* Suggestion Dropdown - Above Input */}
+          {showSuggestions && getMatchingProducts().length > 0 && (
+            <View style={styles.suggestionsDropdown}>
+              <Text style={styles.suggestionsTitle}>Gợi ý:</Text>
+              {getMatchingProducts().map((product) => (
+                <TouchableOpacity
+                  key={`suggestion-${product.id}-${product.name}`}
+                  style={styles.suggestionRow}
+                  onPress={() => handleQuickAddFromSuggestion(product.name, 1)}
+                >
+                  <Image source={{ uri: product.image }} style={styles.suggestionImg} />
+                  <View style={styles.suggestionInfo}>
+                    <Text style={styles.suggestionName} numberOfLines={1}>{product.name}</Text>
+                    <Text style={styles.suggestionPrice}>{formatPrice(product.price)}</Text>
+                  </View>
+                  <Icon name="plus-circle" size={24} color="#10B981" />
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
+
           {/* Input Row */}
           <View style={styles.inputRow}>
             <TextInput
@@ -1086,6 +1223,7 @@ const AddItemsScreen = () => {
               onChangeText={setInputText}
               multiline
               maxLength={500}
+              onSubmitEditing={addToCart}
             />
             <TouchableOpacity
               style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
@@ -1095,6 +1233,7 @@ const AddItemsScreen = () => {
               <Icon name="arrow-right" size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
+
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.actionButton} onPress={clearAll}>
               <Icon name="delete-outline" size={16} color="#5f6368" />
@@ -1155,7 +1294,7 @@ const AddItemsScreen = () => {
             <FlatList
               data={productList}
               renderItem={renderProductItem}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={(item, index) => `product-${item.id}-${item.name}-${index}`}
               style={styles.productList}
             />
           </View>
@@ -2146,6 +2285,95 @@ const styles = StyleSheet.create({
   carrierName: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  // Suggestion Dropdown Styles
+  suggestionsDropdown: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  suggestionsTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  suggestionImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  suggestionInfo: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  suggestionPrice: {
+    fontSize: 13,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  // Quick Access Styles
+  quickAccessSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  quickAccessGroup: {
+    marginBottom: 16,
+  },
+  quickAccessTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 10,
+  },
+  quickAccessScroll: {
+    flexDirection: 'row',
+  },
+  quickAccessChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  quickAccessImg: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  quickAccessChipText: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '500',
+    marginRight: 6,
+    maxWidth: 100,
   },
 });
 

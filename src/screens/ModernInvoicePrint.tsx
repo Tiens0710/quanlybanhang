@@ -14,8 +14,9 @@ import {
 
 // Import with error handling
 let captureRef: any;
-let RNHTMLtoPDF: any;
+let RNPrint: any;
 let RNFS: any;
+let RNShare: any;
 
 try {
   const viewShotModule = require('react-native-view-shot');
@@ -25,10 +26,10 @@ try {
 }
 
 try {
-  const htmlToPdfModule = require('react-native-html-to-pdf');
-  RNHTMLtoPDF = htmlToPdfModule.default || htmlToPdfModule;
+  const printModule = require('react-native-print');
+  RNPrint = printModule.default || printModule;
 } catch (e) {
-  RNHTMLtoPDF = null;
+  RNPrint = null;
 }
 
 try {
@@ -36,6 +37,13 @@ try {
   RNFS = fsModule.default || fsModule;
 } catch (e) {
   RNFS = null;
+}
+
+try {
+  const shareModule = require('react-native-share');
+  RNShare = shareModule.default || shareModule;
+} catch (e) {
+  RNShare = null;
 }
 
 interface InvoiceItem {
@@ -425,62 +433,84 @@ Tiền thối: ${formatCurrency(invoiceData.amountPaid - invoiceData.subtotal)}
 Thank you! ❤️`;
   };
 
-  // Handle Zalo sharing with fallbacks
+  // Handle Zalo sharing - open Zalo directly with invoice image
   const handleSendZalo = async (): Promise<void> => {
     try {
       setIsProcessing(true);
 
-      const invoiceText = generateInvoiceText();
+      let imageUri: string | undefined;
 
-      // Always use Share API first (most reliable)
-      const result = await Share.share({
-        message: invoiceText,
-        title: `Hóa đơn ${invoiceData.invoiceNumber} `,
-      });
-
-      if (result.action === Share.sharedAction) {
-        // Check if Zalo is available and offer to open it
-        const zaloAppUrl = 'zalo://';
-        const canOpenZalo = await Linking.canOpenURL(zaloAppUrl);
-
-        if (canOpenZalo) {
-          Alert.alert(
-            'Chia sẻ thành công! ✅',
-            'Bạn có muốn mở Zalo để gửi hóa đơn không?',
-            [
-              { text: 'Không', onPress: () => onPrint?.() },
-              {
-                text: 'Mở Zalo',
-                onPress: () => {
-                  Linking.openURL(zaloAppUrl);
-                  onPrint?.();
-                }
-              }
-            ]
-          );
-        } else {
-          Alert.alert('Chia sẻ thành công! ✅', 'Hóa đơn đã được chia sẻ.');
-          onPrint?.();
+      // Try to capture invoice as image first
+      if (captureRef && invoiceRef.current) {
+        try {
+          imageUri = await captureRef(invoiceRef.current, {
+            format: 'png',
+            quality: 1.0,
+            width: 800,
+          });
+        } catch (captureError) {
+          console.warn('Could not capture image:', captureError);
         }
       }
 
+      const message = `🧾 Hóa đơn #${invoiceData.invoiceNumber} - ${formatCurrency(invoiceData.subtotal)}`;
+
+      // Try to use react-native-share to open Zalo directly
+      if (RNShare && imageUri) {
+        try {
+          // Use RNShare.open to properly share image with all apps
+          await RNShare.open({
+            title: `Hóa đơn ${invoiceData.invoiceNumber}`,
+            message: message,
+            url: imageUri,
+            type: 'image/png',
+            showAppsToView: true,
+          });
+          Alert.alert('Thành công! ✅', 'Đã chia sẻ hóa đơn.');
+          onPrint?.();
+          return;
+        } catch (shareError: any) {
+          // User cancelled or error
+          if (shareError?.message !== 'User did not share') {
+            console.warn('Share error:', shareError);
+          }
+          return;
+        }
+      }
+
+      // Fallback: Use text sharing if image capture failed
+      await Share.share({
+        message: generateInvoiceText(),
+        title: `Hóa đơn ${invoiceData.invoiceNumber}`,
+      });
+      onPrint?.();
+
     } catch (error) {
       console.error('Share error:', error);
-      Alert.alert('Lỗi chia sẻ', 'Không thể chia sẻ hóa đơn. Vui lòng thử lại.');
+
+      // Final fallback - share text only
+      try {
+        await Share.share({
+          message: generateInvoiceText(),
+          title: `Hóa đơn ${invoiceData.invoiceNumber}`,
+        });
+      } catch (shareError) {
+        Alert.alert('Lỗi chia sẻ', 'Không thể chia sẻ hóa đơn. Vui lòng thử lại.');
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle PDF creation with better error handling
+  // Handle PDF creation with react-native-print (system print dialog)
   const handleCreatePDF = async (): Promise<void> => {
     try {
       setIsProcessing(true);
 
-      if (!RNHTMLtoPDF) {
+      if (!RNPrint) {
         Alert.alert(
           'Yêu cầu khởi động lại',
-          'Tính năng PDF cần thư viện mới. Vui lòng tắt ứng dụng và chạy lại lệnh "npx react-native run-android".\n\nĐang chia sẻ text tạm thời...',
+          'Tính năng in/PDF cần thư viện mới. Vui lòng tắt ứng dụng và chạy lại lệnh "npx react-native run-android".\n\nĐang chia sẻ text tạm thời...',
           [{ text: 'OK' }]
         );
 
@@ -494,81 +524,23 @@ Thank you! ❤️`;
         return;
       }
 
-      // NOTE: We do NOT block on permission here. 
-      // We generate PDF in cache (sandbox) which is always allowed, 
-      // then we Share it. Saving to Downloads is a 'nice to have' extra.
-
       const htmlContent = generateInvoiceHTML();
-      const currentDate = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-      const fileName = `HoaDon_${invoiceData.invoiceNumber}_${currentDate}`;
 
-      // Create PDF in cache/temp directory first
-      const options = {
+      // Use RNPrint to open system print dialog
+      // User can choose "Save as PDF" or print directly
+      await RNPrint.print({
         html: htmlContent,
-        fileName: fileName,
-        width: 595,
-        height: 842,
-        padding: 20,
-      };
+        jobName: `HoaDon_${invoiceData.invoiceNumber}`,
+      });
 
-      const file = await RNHTMLtoPDF.convert(options);
-      let filePath = file.filePath;
-
-      // 1. Share immediately (Priority 1) - Works without extra permissions
-      try {
-        await Share.share({
-          url: Platform.OS === 'android' ? `file://${filePath}` : filePath,
-          title: `Hóa đơn ${invoiceData.invoiceNumber}`,
-          message: `Hóa đơn PDF: ${fileName}`
-        });
-      } catch (shareErr) {
-        console.log('Share error', shareErr);
-      }
-
-      // 2. OPTIONAL: Try to save to Downloads (Priority 2)
-      if (RNFS) {
-        try {
-          // Attempt to get permission JUST for saving, but don't force it
-          let hasWritePerm = true;
-          if (Platform.OS === 'android' && Platform.Version < 30) {
-            hasWritePerm = await requestStoragePermission();
-          }
-          // On Android 11+ (Version 30+), we might need MANAGE_EXTERNAL_STORAGE for strict fs access
-          // OR simply rely on Share. But let's try gracefully.
-
-          if (hasWritePerm) {
-            const destPath = Platform.OS === 'android'
-              ? `${RNFS.DownloadDirectoryPath}/${fileName}.pdf`
-              : `${RNFS.DocumentDirectoryPath}/${fileName}.pdf`;
-
-            if (await RNFS.exists(destPath)) {
-              await RNFS.unlink(destPath);
-            }
-            await RNFS.copyFile(filePath, destPath);
-
-            // Only alert if we successfully SAVED to downloads
-            Alert.alert(
-              'Tải về thành công! ✅',
-              `File PDF đã được lưu tại:\nBộ nhớ trong > Download > ${fileName}.pdf\n\n(App cũng sẽ mở menu chia sẻ để bạn gửi nhanh)`,
-              [{ text: 'OK', onPress: () => onPrint?.() }]
-            );
-            return;
-          }
-        } catch (copyError) {
-          console.warn('Could not copy to Downloads (Permission or FS error)', copyError);
-          Alert.alert(
-            'Lưu file thất bại',
-            'Không thể lưu trực tiếp vào thư mục Download do hạn chế quyền của Android.\n\nVui lòng sử dụng tính năng "Chia sẻ" (Share) vừa hiện lên để lưu hoặc gửi file.',
-            [{ text: 'Đã hiểu' }]
-          );
-        }
-      }
-
-      // If we got here, we shared but didn't verify save. That's fine.
-      // No extra alert needed as Share sheet is obvious feedback.
+      Alert.alert(
+        'Hoàn tất! ✅',
+        'Bạn có thể chọn "Lưu dưới dạng PDF" hoặc in trực tiếp từ dialog vừa hiện.',
+        [{ text: 'OK', onPress: () => onPrint?.() }]
+      );
 
     } catch (error) {
-      console.error('PDF creation error:', error);
+      console.error('Print/PDF error:', error);
 
       // Fallback to text sharing
       try {
