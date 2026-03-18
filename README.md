@@ -1,227 +1,227 @@
-# Kich Ban Thuyet Trinh FinWise (Ban Chi Tiet)
+# Kịch Bản Thuyết Trình FinWise (Bản Chi Tiết)
 
-## Cach su dung tai lieu nay
+## Cách sử dụng tài liệu này
 
-- Day la ban loi thoai de doc khi thuyet trinh that su.
-- Moi muc co thoi luong goi y, ban co the linh hoat rut gon neu can.
-- Phan [Loi noi] la cau noi goi y.
-- Phan [Thao tac demo] la thao tac tren dien thoai/man hinh.
-
----
-
-## 0. Gioi thieu nhom va mo bai (45 giay)
-
-### Loi noi
-
-Kinh chao thay/co va cac ban.
-
-Hom nay nhom em xin trinh bay de tai FinWise, ung dung quan ly tai chinh ca nhan tich hop AI.
-
-Y tuong cua nhom den tu mot van de rat thuc te: nhieu nguoi co thu nhap nhung cuoi thang van khong ro tien da di dau, do ghi chep roi rac, kho theo doi va thieu cong cu phan tich.
-
-Voi FinWise, nhom em dat 3 muc tieu chinh:
-- Thu nhat, ghi nhan thu chi nhanh va de dung moi ngay.
-- Thu hai, giup nguoi dung theo doi ngan sach, vi va muc tieu tiet kiem ro rang.
-- Thu ba, su dung AI de ho tro giai dap va dua ra goi y tai chinh co ban.
+- Đây là bản lời thoại để đọc khi thuyết trình thật sự.
+- Mỗi mục có thời lượng gợi ý, bạn có thể linh hoạt rút gọn nếu cần.
+- Phần [Lời nói] là câu nói gợi ý.
+- Phần [Thao tác demo] là thao tác trên điện thoại/màn hình.
 
 ---
 
-## 1. Tong quan san pham (1 phut)
+## 0. Giới thiệu nhóm và mở bài (45 giây)
 
-### Loi noi
+### Lời nói
 
-FinWise duoc xay dung theo huong mot tro ly tai chinh ca nhan tren dien thoai.
+Kính chào thầy/cô và các bạn.
 
-San pham gom cac nhom tinh nang chinh:
-- Dang nhap va xac thuc: email, Google, sinh trac hoc.
-- Quan ly giao dich thu va chi.
-- Quan ly nhieu vi/tai khoan.
-- Dat ngan sach theo danh muc.
-- Dat muc tieu tiet kiem.
-- Bao cao tai chinh truc quan.
-- Chatbot AI ho tro nguoi dung trong qua trinh su dung app.
+Hôm nay, nhóm em xin trình bày đề tài FinWise, ứng dụng quản lý tài chính cá nhân tích hợp AI.
 
-Diem khac biet cua FinWise la tap trung vao trai nghiem nhanh, de thao tac, va cho ket qua theo doi tai chinh ngay lap tuc.
+Ý tưởng của nhóm đến từ một vấn đề rất thực tế: nhiều người có thu nhập nhưng cuối tháng vẫn không rõ tiền đã đi đâu, do ghi chép rời rạc, khó theo dõi và thiếu công cụ phân tích.
+
+Với FinWise, nhóm em đặt 3 mục tiêu chính:
+- Thứ nhất, ghi nhận thu chi nhanh và dễ dùng mỗi ngày.
+- Thứ hai, giúp người dùng theo dõi ngân sách, ví và mục tiêu tiết kiệm rõ ràng.
+- Thứ ba, sử dụng AI để hỗ trợ giải đáp và đưa ra gợi ý tài chính cơ bản.
 
 ---
 
-## 2. Demo luong su dung thuc te (4 den 5 phut)
+## 1. Tổng quan sản phẩm (1 phút)
 
-## 2.1 Dang nhap
+### Lời nói
 
-### Loi noi
+FinWise được xây dựng theo hướng một trợ lý tài chính cá nhân trên điện thoại.
 
-Em xin demo tu buoc dang nhap.
+Sản phẩm gồm các nhóm tính năng chính:
+- Đăng nhập và xác thực: email, Google, sinh trắc học.
+- Quản lý giao dịch thu và chi.
+- Quản lý nhiều ví/tài khoản.
+- Đặt ngân sách theo danh mục.
+- Đặt mục tiêu tiết kiệm.
+- Báo cáo tài chính trực quan.
+- Chatbot AI hỗ trợ người dùng trong quá trình sử dụng app.
 
-Nguoi dung co the dang nhap bang email mat khau, hoac dang nhap nhanh bang Google.
+Điểm khác biệt của FinWise là tập trung vào trải nghiệm nhanh, dễ thao tác, và cho kết quả theo dõi tài chính ngay lập tức.
 
-Sau khi dang nhap, he thong luu trang thai tai khoan va hien thi ten nguoi dung tren man hinh chinh de ca nhan hoa trai nghiem.
+---
 
-### Thao tac demo
+## 2. Demo luồng sử dụng thực tế (4 đến 5 phút)
 
-- Mo man hinh dang nhap.
-- Dang nhap bang 1 tai khoan mau.
-- Vao trang chu va chi vao ten hien thi tren header.
+## 2.1 Đăng nhập
 
-## 2.2 Dashboard tong quan
+### Lời nói
 
-### Loi noi
+Em xin demo từ bước đăng nhập.
 
-Day la man hinh Dashboard, noi tom tat toan bo buc tranh tai chinh hien tai.
+Người dùng có thể đăng nhập bằng email mật khẩu, hoặc đăng nhập nhanh bằng Google.
 
-Nguoi dung co the xem nhanh:
-- Tong thu nhap trong thang.
-- Tong chi tieu trong thang.
-- So giao dich trong ngay.
-- So danh muc dang vuot ngan sach.
+Sau khi đăng nhập, hệ thống lưu trạng thái tài khoản và hiển thị tên người dùng trên màn hình chính để cá nhân hóa trải nghiệm.
 
-Chi trong vai giay, nguoi dung da co du lieu de biet hien tai minh dang o trang thai tai chinh nhu the nao.
+### Thao tác demo
 
-### Thao tac demo
+- Mở màn hình đăng nhập.
+- Đăng nhập bằng 1 tài khoản mẫu.
+- Vào trang chủ và chỉ vào tên hiển thị trên header.
 
-- Chi vao cac the tong hop tren dashboard.
-- Neu co du lieu, mo ta ngan gon y nghia 1 con so thuc te.
+## 2.2 Dashboard tổng quan
 
-## 2.3 Them giao dich nhanh
+### Lời nói
 
-### Loi noi
+Đây là màn hình Dashboard, nơi tóm tắt toàn bộ bức tranh tài chính hiện tại.
 
-Buoc tiep theo la them giao dich.
+Người dùng có thể xem nhanh:
+- Tổng thu nhập trong tháng.
+- Tổng chi tiêu trong tháng.
+- Số giao dịch trong ngày.
+- Số danh mục đang vượt ngân sách.
 
-Nguoi dung co the nhap nhanh noi dung theo ngon ngu tu nhien, vi du: an trua 50 nghin hoac nhan luong 8 trieu.
+Chỉ trong vài giây, người dùng đã có dữ liệu để biết hiện tại mình đang ở trạng thái tài chính như thế nào.
 
-Sau khi luu, giao dich duoc cap nhat vao danh sach va dong bo ve dashboard.
+### Thao tác demo
 
-Day la thao tac quan trong nhat, nen nhom em toi uu de nguoi dung mat it thao tac nhat co the.
+- Chỉ vào các thẻ tổng hợp trên dashboard.
+- Nếu có dữ liệu, mô tả ngắn gọn ý nghĩa 1 con số thực tế.
 
-### Thao tac demo
+## 2.3 Thêm giao dịch nhanh
 
-- Mo man hinh them giao dich.
-- Nhap 1 giao dich chi tieu va nhan gui.
-- Quay ve danh sach hoac dashboard de xac nhan du lieu da cap nhat.
+### Lời nói
 
-## 2.4 Ngan sach va muc tieu
+Bước tiếp theo là thêm giao dịch.
 
-### Loi noi
+Người dùng có thể nhập nhanh nội dung theo ngôn ngữ tự nhiên, ví dụ: “Ăn trưa 50 nghìn” hoặc “Nhận lương 8 triệu”.
 
-Sau khi co du lieu giao dich, nguoi dung co the dat ngan sach theo danh muc nhu an uong, di chuyen, giai tri.
+Sau khi lưu, giao dịch được cập nhật vào danh sách và đồng bộ về dashboard.
 
-Dong thoi, nguoi dung dat muc tieu tiet kiem, vi du mua laptop hoac du lich.
+Đây là thao tác quan trọng nhất, nên nhóm em tối ưu để người dùng mất ít thao tác nhất có thể.
 
-FinWise giup nguoi dung theo doi tien do va canh bao khi chi tieu co dau hieu vuot muc.
+### Thao tác demo
 
-### Thao tac demo
+- Mở màn hình thêm giao dịch.
+- Nhập 1 giao dịch chi tiêu và nhấn gửi.
+- Quay về danh sách hoặc dashboard để xác nhận dữ liệu đã cập nhật.
 
-- Mo man hinh Budget va chi vao han muc.
-- Mo man hinh Goals va mo ta tien do mot muc tieu.
+## 2.4 Ngân sách và mục tiêu
 
-## 2.5 Bao cao tai chinh
+### Lời nói
 
-### Loi noi
+Sau khi có dữ liệu giao dịch, người dùng có thể đặt ngân sách theo danh mục như ăn uống, di chuyển, giải trí.
 
-Man hinh Bao cao giup chuyen du lieu thanh thong tin de ra quyet dinh.
+Đồng thời, người dùng đặt mục tiêu tiết kiệm, ví dụ mua laptop hoặc du lịch.
 
-Nguoi dung thay duoc:
-- Danh muc nao dang chiem ty trong chi tieu cao.
-- Xu huong tang giam theo thoi gian.
-- Tuong quan giua thu nhap va chi tieu.
+FinWise giúp người dùng theo dõi tiến độ và cảnh báo khi chi tiêu có dấu hiệu vượt mức.
 
-Tu do, nguoi dung khong chi ghi chep ma con thay doi duoc hanh vi tai chinh.
+### Thao tác demo
 
-### Thao tac demo
+- Mở màn hình Budget và chỉ vào hạn mức.
+- Mở màn hình Goals và mô tả tiến độ một mục tiêu.
 
-- Mo man hinh reports.
-- Chi vao bieu do va dien giai 1 nhan xet ngan.
+## 2.5 Báo cáo tài chính
+
+### Lời nói
+
+Màn hình Báo cáo giúp chuyển dữ liệu thành thông tin để ra quyết định.
+
+Người dùng thấy được:
+- Danh mục nào đang chiếm tỷ trọng chi tiêu cao.
+- Xu hướng tăng giảm theo thời gian.
+- Tương quan giữa thu nhập và chi tiêu.
+
+Từ đó, người dùng không chỉ ghi chép mà còn thay đổi được hành vi tài chính.
+
+### Thao tác demo
+
+- Mở màn hình Reports.
+- Chỉ vào biểu đồ và diễn giải 1 nhận xét ngắn.
 
 ## 2.6 Chatbot AI
 
-### Loi noi
+### Lời nói
 
-Cuoi cung la chatbot AI, phan tao su than thien cho nguoi moi su dung.
+Cuối cùng là chatbot AI, phần tạo sự thân thiện cho người mới sử dụng.
 
-AI co the ho tro:
-- Huong dan thao tac trong app.
-- Giai dap cau hoi ve quan ly tai chinh ca nhan co ban.
-- Dua ra goi y theo ngu canh cau hoi.
+AI có thể hỗ trợ:
+- Hướng dẫn thao tác trong app.
+- Giải đáp câu hỏi về quản lý tài chính cá nhân cơ bản.
+- Đưa ra gợi ý theo ngữ cảnh câu hỏi.
 
-Gia tri chinh la nguoi dung duoc ho tro ngay trong app, khong can thoat ra tim huong dan ben ngoai.
+Giá trị chính là người dùng được hỗ trợ ngay trong app, không cần thoát ra tìm hướng dẫn bên ngoài.
 
-### Thao tac demo
+### Thao tác demo
 
-- Mo man hinh Ask FinWise.
-- Dat 1 cau hoi mau va doc nhanh cau tra loi.
-
----
-
-## 3. Ket qua theo tien do 3 tuan (1 phut 30 giay)
-
-### Loi noi
-
-Voi tien do trien khai, nhom em chia thanh 3 tuan ro rang:
-
-Tuan 1 tap trung muc 3.4 Promote va phac thao app.
-Ket qua la xac dinh thong diep truyen thong, kenh tiep can, va co wireframe cho cac man hinh cot loi.
-
-Tuan 2 tap trung muc 3.5 People va dung app co ban.
-Ket qua la phan cong vai tro ro rang, dung xong khung ung dung, va chay duoc cac tinh nang nen tang.
-
-Tuan 3 tap trung hoan thien san pham va nang cap AI.
-Ket qua la hoan thien luong demo end to end, toi uu giao dien va bo sung tinh nang AI phuc vu nguoi dung.
+- Mở màn hình Ask FinWise.
+- Đặt 1 câu hỏi mẫu và đọc nhanh câu trả lời.
 
 ---
 
-## 4. Danh gia, han che va huong phat trien (1 phut)
+## 3. Kết quả theo tiến độ 3 tuần (1 phút 30 giây)
 
-### Loi noi
+### Lời nói
 
-Ve ket qua, FinWise da dat duoc muc tieu ban dau: co the dung thuc te cho bai toan theo doi tai chinh ca nhan co ban.
+Với tiến độ triển khai, nhóm em chia thành 3 tuần rõ ràng:
 
-Tuy nhien, nhom em van nhin nhan mot so han che:
-- Van con mot vai loi nho ve UI tren mot so kich thuoc man hinh.
-- AI hien tai moi o muc ho tro co ban, chua ca nhan hoa sau theo hanh vi tung nguoi.
+Tuần 1 tập trung mục 3.4 Promote và phác thảo app.
+Kết quả là xác định thông điệp truyền thông, kênh tiếp cận, và có wireframe cho các màn hình cốt lõi.
 
-Trong giai doan tiep theo, nhom em du kien:
-- Dong bo cloud da thiet bi.
-- Tu dong phan loai giao dich thong minh hon.
-- Canh bao ngan sach chu dong dua tren lich su chi tieu.
-- Nang cap AI de de xuat ke hoach tiet kiem ca nhan hoa.
+Tuần 2 tập trung mục 3.5 People và dựng app cơ bản.
+Kết quả là phân công vai trò rõ ràng, dựng xong khung ứng dụng, và chạy được các tính năng nền tảng.
 
----
-
-## 5. Ket luan (30 giay)
-
-### Loi noi
-
-Tom lai, FinWise khong chi la cong cu ghi chep thu chi, ma huong den vai tro mot tro ly dong hanh, giup nguoi dung hieu ro dong tien va ra quyet dinh tai chinh tot hon moi ngay.
-
-Nhom em xin chan thanh cam on thay/co va cac ban da lang nghe.
-
-Nhom em san sang tra loi cau hoi va nhan gop y de tiep tuc hoan thien san pham.
+Tuần 3 tập trung hoàn thiện sản phẩm và nâng cấp AI.
+Kết quả là hoàn thiện luồng demo end-to-end, tối ưu giao diện và bổ sung tính năng AI phục vụ người dùng.
 
 ---
 
-## 6. Q and A mau (de tap truoc khi bao cao)
+## 4. Đánh giá, hạn chế và hướng phát triển (1 phút)
 
-### Cau hoi 1: Tai sao nhom chon de tai nay?
+### Lời nói
 
-Tra loi goi y:
-Nhom em chon vi day la nhu cau rat pho bien voi sinh vien va nguoi di lam tre. Bai toan tai chinh ca nhan co tan suat su dung cao, de do tac dong, va phu hop de ung dung AI ho tro.
+Về kết quả, FinWise đã đạt được mục tiêu ban đầu: có thể dùng thực tế cho bài toán theo dõi tài chính cá nhân cơ bản.
 
-### Cau hoi 2: Gia tri AI trong app la gi?
+Tuy nhiên, nhóm em vẫn nhìn nhận một số hạn chế:
+- Vẫn còn một vài lỗi nhỏ về UI trên một số kích thước màn hình.
+- AI hiện tại mới ở mức hỗ trợ cơ bản, chưa cá nhân hóa sâu theo hành vi từng người.
 
-Tra loi goi y:
-AI giup nguoi dung giam thoi gian lam quen ung dung, nhan huong dan ngay trong ngu canh, va tao trai nghiem than thien hon. Trong tuong lai AI se duoc nang cap de dua goi y ca nhan hoa sau hon.
-
-### Cau hoi 3: Huong phat trien tiep theo cua nhom?
-
-Tra loi goi y:
-Uu tien tiep theo la cloud sync, thong bao thong minh, va nang cap AI de phan tich va de xuat ke hoach tai chinh cho tung nguoi dung.
+Trong giai đoạn tiếp theo, nhóm em dự kiến:
+- Đồng bộ cloud đa thiết bị.
+- Tự động phân loại giao dịch thông minh hơn.
+- Cảnh báo ngân sách chủ động dựa trên lịch sử chi tiêu.
+- Nâng cấp AI để đề xuất kế hoạch tiết kiệm cá nhân hóa.
 
 ---
 
-## 7. Ghi nho nhanh truoc khi len trinh bay
+## 5. Kết luận (30 giây)
 
-- Noi cham, ro, giu toc do on dinh.
-- Moi man demo chi thao tac 1 den 2 diem then chot.
-- Neu gap loi ky thuat, quay ve thong diep chinh va tiep tuc bai noi.
-- Chot bai bang gia tri nguoi dung nhan duoc, khong chi noi tinh nang.
+### Lời nói
+
+Tóm lại, FinWise không chỉ là công cụ ghi chép thu chi, mà hướng đến vai trò một trợ lý đồng hành, giúp người dùng hiểu rõ dòng tiền và ra quyết định tài chính tốt hơn mỗi ngày.
+
+Nhóm em xin chân thành cảm ơn thầy/cô và các bạn đã lắng nghe.
+
+Nhóm em sẵn sàng trả lời câu hỏi và nhận góp ý để tiếp tục hoàn thiện sản phẩm.
+
+---
+
+## 6. Q&A mẫu (để tập trước khi báo cáo)
+
+### Câu hỏi 1: Tại sao nhóm chọn đề tài này?
+
+Trả lời gợi ý:
+Nhóm em chọn vì đây là nhu cầu rất phổ biến với sinh viên và người đi làm trẻ. Bài toán tài chính cá nhân có tần suất sử dụng cao, dễ đo tác động, và phù hợp để ứng dụng AI hỗ trợ.
+
+### Câu hỏi 2: Giá trị AI trong app là gì?
+
+Trả lời gợi ý:
+AI giúp người dùng giảm thời gian làm quen ứng dụng, nhận hướng dẫn ngay trong ngữ cảnh, và tạo trải nghiệm thân thiện hơn. Trong tương lai AI sẽ được nâng cấp để đưa gợi ý cá nhân hóa sâu hơn.
+
+### Câu hỏi 3: Hướng phát triển tiếp theo của nhóm?
+
+Trả lời gợi ý:
+Ưu tiên tiếp theo là cloud sync, thông báo thông minh, và nâng cấp AI để phân tích và đề xuất kế hoạch tài chính cho từng người dùng.
+
+---
+
+## 7. Ghi nhớ nhanh trước khi lên trình bày
+
+- Nói chậm, rõ, giữ tốc độ ổn định.
+- Mỗi màn demo chỉ thao tác 1 đến 2 điểm then chốt.
+- Nếu gặp lỗi kỹ thuật, quay về thông điệp chính và tiếp tục bài nói.
+- Chốt bài bằng giá trị người dùng nhận được, không chỉ nói tính năng.
